@@ -363,6 +363,10 @@ int main(int argc, char *argv[])
     TTF_CloseFont(font);
     SDL_DestroyTexture(scene.caption);
     SDL_DestroyTexture(scene.message);
+#ifdef __MORPHOS__
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
+#endif
     cleanup(0);
 
     /* Not reached, but fixes compiler warnings */

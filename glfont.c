@@ -517,6 +517,9 @@ int main(int argc, char *argv[])
     }
     SDL_GL_DeleteContext(context);
     TTF_CloseFont(font);
+#ifdef __MORPHOS__
+	SDL_DestroyWindow(window);
+#endif
     cleanup(0);
 
     /* Not reached, but fixes compiler warnings */
