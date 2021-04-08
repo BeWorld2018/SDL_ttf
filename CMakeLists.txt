@@ -14,9 +14,9 @@ if (ANDROID)
     target_sources(SDL2_ttf PRIVATE SDL_ttf.c)
 
     if (TTF_WITH_HARFBUZZ)
-        set(HARFBUZZ_INCLUDE_DIRS ../../external/harfbuzz-2.3.1/src)
+        set(HARFBUZZ_INCLUDE_DIRS ../../external/harfbuzz-2.8.0/src)
         set(HARFBUZZ_LIBRARIES harfbuzz)
-        set(FREETYPE_INCLUDE_DIRS ../../external/freetype-2.10.1/include)
+        set(FREETYPE_INCLUDE_DIRS ../../external/freetype-2.10.4/include)
         set(FREETYPE_LIBRARY freetype)
 
         add_definitions("-DTTF_USE_HARFBUZZ=1")
@@ -24,16 +24,16 @@ if (ANDROID)
         set(HB_HAVE_FREETYPE ON CACHE BOOL "" FORCE)
         set(FT_WITH_HARFBUZZ ON CACHE BOOL "" FORCE)
 
-        add_subdirectory(external/harfbuzz-2.3.1)
-        target_include_directories(SDL2_ttf PUBLIC external/harfbuzz-2.3.1/src)
+        add_subdirectory(external/harfbuzz-2.8.0)
+        target_include_directories(SDL2_ttf PUBLIC external/harfbuzz-2.8.0/src)
         target_link_libraries(SDL2_ttf PRIVATE harfbuzz)
 
     else()
         set(FT_WITH_HARFBUZZ OFF CACHE BOOL "" FORCE)
     endif()
 
-    add_subdirectory(external/freetype-2.10.1)
-    include_directories(external/freetype-2.10.1/include)
+    add_subdirectory(external/freetype-2.10.4)
+    include_directories(external/freetype-2.10.4/include)
 
     target_include_directories(SDL2_ttf PUBLIC .)
     target_link_libraries(SDL2_ttf PRIVATE freetype SDL2)
