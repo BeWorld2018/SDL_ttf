@@ -4,7 +4,7 @@ CDEFS   = -DAROS_ALMOST_COMPATIBLE -DUSE_INLINE_STDARG -D__MORPHOS_SHAREDLIBS -D
 
 CC      = ppc-morphos-gcc-10 -noixemul
 
-INCLUDE = -I/usr/local/include/SDL2 -I. -Iexternal/freetype-2.10.1/include
+INCLUDE = -I/usr/local/include/SDL2 -I. -Iexternal/freetype-2.10.4/include
 CFLAGS  = -mcpu=750 -mtune=7450 -O2 $(INCLUDE) -mresident32 -Wall -Wno-pointer-sign -fno-strict-aliasing $(CDEFS)
 
 AR	= ppc-morphos-ar
@@ -72,7 +72,7 @@ CORESOURCES = morphos/*.c
 COREOBJECTS = $(shell echo $(CORESOURCES) | sed -e 's,\.c,\.o,g')
 
 OBJECTS = $(shell echo $(SOURCES) | sed -e 's,\.c,\.o,g')
-FTOBJECTS = $(addprefix external/freetype-2.10.1/, $(FTSOURCES:.c=.o))
+FTOBJECTS = $(addprefix external/freetype-2.10.4/, $(FTSOURCES:.c=.o))
 
 all: $(LIBRARY) sdklibs
 
