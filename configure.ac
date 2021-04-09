@@ -59,10 +59,10 @@ AC_CHECK_PROGS(WINDRES, [windres $hostaliaswindres $host_os-windres])
 
 case "$host" in
     *-*-cygwin* | *-*-mingw*)
-	;;
-    *)
-	AC_FUNC_ALLOCA
-	;;
+        ;;
+
+    *)  AC_FUNC_ALLOCA
+        ;;
 esac
 
 
@@ -87,7 +87,7 @@ case "$host" in
 esac
 AM_CONDITIONAL(USE_VERSION_RC, test x$use_version_rc = xtrue)
 
-SUMMARY="\n\nSDL2_ttf Configure Summary:\n"
+SUMMARY="\nSDL2_ttf Configure Summary:\n"
 
 
 dnl Check for the FreeType 2 library
@@ -106,7 +106,7 @@ CheckHarfBuzz()
 
     if test x$enable_harfbuzz != xyes; then
         AC_DEFINE(TTF_USE_HARFBUZZ, 0, [ ])
-        SUMMARY="${SUMMARY} harfbuzz: disabled"
+        SUMMARY="${SUMMARY}Using harfbuzz      : NO\n"
     else
         PKG_CHECK_MODULES([HB], [harfbuzz >= 2.3.1], harfbuzz=yes, harfbuzz=no)
 
@@ -114,10 +114,10 @@ CheckHarfBuzz()
             AC_DEFINE(TTF_USE_HARFBUZZ, 1, [ ])
             CFLAGS="$CFLAGS $HB_CFLAGS"
             LIBS="$LIBS $HB_LIBS"
-            SUMMARY="${SUMMARY} harfbuzz: enabled"
+            SUMMARY="${SUMMARY}Using harfbuzz      : YES\n"
         else
             AC_DEFINE(TTF_USE_HARFBUZZ, 0, [ ])
-            SUMMARY="${SUMMARY} harfbuzz: not found"
+            SUMMARY="${SUMMARY}Using harfbuzz      : NO\n"
         fi
     fi
 }
@@ -151,7 +151,7 @@ case "$host" in
     *-*-aix*)
         if test x$ac_cv_c_compiler_gnu = xyes; then
             CFLAGS="-mthreads"
-	fi
+        fi
         SYS_GL_LIBS=""
         ;;
     *)
@@ -197,5 +197,4 @@ SDL2_ttf.pc
 ])
 
 AC_CONFIG_COMMANDS([summary], [printf "$SUMMARY"], [SUMMARY="$SUMMARY"])
-
 AC_OUTPUT
