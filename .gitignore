@@ -4,6 +4,7 @@ config.log
 config.status
 libtool
 .deps
+.dirstamp
 .libs
 *.lo
 *.o
