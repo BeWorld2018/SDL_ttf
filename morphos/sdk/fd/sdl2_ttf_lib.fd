@@ -73,4 +73,6 @@ TTF_WasInit()(sysv,r12base)
 TTF_GetFontKerningSize(font, prev_index, index)(sysv,r12base)
 TTF_GetFontKerningSizeGlyphs(font, previous_ch, ch)(sysv,r12base)
 TTF_GetFontKerningSizeGlyphs32(font, previous_ch, ch)(sysv,r12base)
+TTF_GetFreeTypeVersion(major, minor, patch)(sysv,r12base)
+TTF_GetHarfBuzzVersion(major, minor, patch)(sysv,r12base)
 ##end

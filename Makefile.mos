@@ -5,7 +5,7 @@ CDEFS   = -DAROS_ALMOST_COMPATIBLE -DUSE_INLINE_STDARG -D__MORPHOS_SHAREDLIBS -D
 
 CC      = ppc-morphos-gcc-10 -noixemul
 
-INCLUDE = -I/usr/local/include/SDL2 -I. -Iexternal/freetype-2.10.4/include
+INCLUDE = -I/usr/local/include/SDL2 -I. -I/usr/local/include
 CFLAGS  = -mcpu=750 -mtune=7450 -O2 $(INCLUDE) -mresident32 -Wall -Wno-pointer-sign -fno-strict-aliasing $(CDEFS)
 
 AR	= ppc-morphos-ar
@@ -73,7 +73,6 @@ CORESOURCES = morphos/*.c
 COREOBJECTS = $(shell echo $(CORESOURCES) | sed -e 's,\.c,\.o,g')
 
 OBJECTS = $(shell echo $(SOURCES) | sed -e 's,\.c,\.o,g')
-FTOBJECTS = $(addprefix external/freetype-2.10.4/, $(FTSOURCES:.c=.o))
 
 all: $(LIBRARY) sdklibs
 
@@ -101,13 +100,13 @@ morphos/TTF_library.o: morphos/TTF_library.c morphos/TTF_library.h morphos/TTF_s
 	$(COMPILING)
 	$(CC) -mcpu=750 $(INCLUDE) -Wall -fno-strict-aliasing -D__AMIGADATE__=\"$(AMIGADATE)\" -DAROS_ALMOST_COMPATIBLE -o $@ -c $*.c
 
-$(TARGET): $(OBJECTS) $(FTOBJECTS)
+$(TARGET): $(OBJECTS) 
 	$(ARCHIVING)
 	@$(AR) crvs $@ $^
 
 $(LIBRARY): $(TARGET) $(COREOBJECTS)
 	$(LINKING)
-	$(CC) -nostartfiles -mresident32 -Wl,-Map=sdl2_ttf.map $(COREOBJECTS) -o $@.db -L. -lSDL2_ttf -L/usr/local/lib -lSDL2 -lm
+	$(CC) -nostartfiles -mresident32 -Wl,-Map=sdl2_ttf.map $(COREOBJECTS) -o $@.db -L. -lSDL2_ttf -L/usr/local/lib -lSDL2 -lm -lfreetype
 	$(STRIPPING)
 	@ppc-morphos-strip -o $@ --remove-section=.comment $@.db
 

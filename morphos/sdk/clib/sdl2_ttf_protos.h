@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 const SDL_version *TTF_Linked_Version(void);
-void TTF_ByteSwappedUNICODE(int swapped);
+void TTF_ByteSwappedUNICODE(SDL_bool swapped);
 int TTF_Init(void);
 TTF_Font *TTF_OpenFont(const char *file, int ptsize);
 TTF_Font *TTF_OpenFontIndex(const char *file, int ptsize, long index);
@@ -82,7 +82,8 @@ int TTF_WasInit(void);
 int TTF_GetFontKerningSize(TTF_Font *font, int prev_index, int index);
 int TTF_GetFontKerningSizeGlyphs(TTF_Font *font, Uint16 previous_ch, Uint16 ch);
 int TTF_GetFontKerningSizeGlyphs32(TTF_Font *font, Uint32 previous_ch, Uint32 ch);
-
+void TTF_GetFreeTypeVersion(int *major, int *minor, int *patch);
+void TTF_GetHarfBuzzVersion(int *major, int *minor, int *patch);
 #ifdef __cplusplus
 }
 #endif

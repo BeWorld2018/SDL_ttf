@@ -100,3 +100,5 @@
 	STUB(TTF_GetFontKerningSize)
 	STUB(TTF_GetFontKerningSizeGlyphs)
 	STUB(TTF_GetFontKerningSizeGlyphs32)
+	STUB(TTF_GetFreeTypeVersion)
+	STUB(TTF_GetHarfBuzzVersion)
