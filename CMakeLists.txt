@@ -1,3 +1,9 @@
+# FIXME: CMAKE SUPPORT IN SDL2_ttf IS VERY INCOMPLETE YET !!!
+#
+# FIXME: make it able build against system libs or the included ones.
+# FIXME: handle library versioning.
+# FIXME: test accross different target platforms.
+
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "Prevented in-tree built. Please create a build directory outside of the SDL_ttf source code and call cmake from there")
 endif()
@@ -7,7 +13,6 @@ cmake_minimum_required(VERSION 3.0)
 project(SDL_ttf C)
 
 if (ANDROID)
-
     option(TTF_WITH_HARFBUZZ "use harfbuzz to improve text shaping" OFF)
 
     add_library(SDL2_ttf SHARED)
@@ -40,24 +45,33 @@ if (ANDROID)
 
 else()
 
-
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-find_package(SDL2 REQUIRED)
-find_package(Freetype REQUIRED)
+if (NOT (TARGET SDL2 OR TARGET SDL2-static))
+  find_package(SDL2 REQUIRED)
+endif()
+if (NOT (TARGET Freetype::Freetype))
+  find_package(Freetype REQUIRED)
+endif()
 find_package(PkgConfig QUIET)
 
 set(SDL_TTF_MAJOR_VERSION 2)
 set(SDL_TTF_MINOR_VERSION 0)
-set(SDL_TTF_MICRO_VERSION 15)
-set(SDL_TTF_INTERFACE_AGE 1)
-set(SDL_TTF_BINARY_AGE 15)
+set(SDL_TTF_MICRO_VERSION 18)
+set(SDL_TTF_INTERFACE_AGE 0)
+set(SDL_TTF_BINARY_AGE 18)
 set(SDL_TTF_VERSION "${SDL_TTF_MAJOR_VERSION}.${SDL_TTF_MINOR_VERSION}.${SDL_TTF_MICRO_VERSION}")
 
 ##### library generation #####
 add_library(SDL2_ttf SDL_ttf.c SDL_ttf.h)
-target_link_libraries(SDL2_ttf SDL2::SDL2 Freetype::Freetype)
+if (BUILD_SHARED_LIBS)
+  target_link_libraries(SDL2_ttf SDL2::SDL2)
+else ()
+  target_link_libraries(SDL2_ttf SDL2::SDL2-static)
+  set_target_properties(SDL2_ttf PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif ()
+target_link_libraries(SDL2_ttf Freetype::Freetype)
 target_include_directories(SDL2_ttf PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/SDL2>)
 
 install(
@@ -121,6 +135,4 @@ if (PKG_CONFIG_FOUND)
   endif ()
 endif ()
 
-
 endif()
-
