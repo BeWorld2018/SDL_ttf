@@ -2,4 +2,4 @@
 #define	xstr(s) str(s)
 #define	VERSION	53
 #define	REVISION	5
-#define	VERSTAG	"\0$VER: sdl2_ttf.library " xstr(VERSION) "." xstr(REVISION) " (" __AMIGADATE__ ") © Ilkka Lehtoranta, Szilárd Biró, Bruno Peloille"
+#define	VERSTAG	"\0$VER: sdl2_ttf.library " xstr(VERSION) "." xstr(REVISION) " (" __AMIGADATE__ ") © Bruno Peloille, Szilárd Biró, Ilkka Lehtoranta "
