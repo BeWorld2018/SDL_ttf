@@ -5,7 +5,7 @@ CDEFS   = -DAROS_ALMOST_COMPATIBLE -DUSE_INLINE_STDARG -D__MORPHOS_SHAREDLIBS -D
 
 CC      = ppc-morphos-gcc-9 -noixemul
 
-INCLUDE = -I/usr/local/include/SDL2 -I. -I/usr/local/include
+INCLUDE = -I/usr/local/include/SDL2 -I. -I./external/freetype-2.11.1/include
 CFLAGS  = -mcpu=750 -mtune=7450 -O2 $(INCLUDE) -mresident32 -Wall -Wno-pointer-sign -fno-strict-aliasing $(CDEFS)
 
 AR	= ppc-morphos-ar
