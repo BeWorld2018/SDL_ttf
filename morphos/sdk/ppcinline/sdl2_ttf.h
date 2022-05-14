@@ -733,4 +733,130 @@
 		(((void (*)(int *, int *, int *))*(void**)(__base - 460))(__t__p0, __t__p1, __t__p2));\
 	})
 
+#define TTF_RenderText_LCD(__p0, __p1, __p2, __p3) \
+	({ \
+		TTF_Font * __t__p0 = __p0;\
+		const char * __t__p1 = __p1;\
+		SDL_Color  __t__p2 = __p2;\
+		SDL_Color  __t__p3 = __p3;\
+		long __base = (long)(SDL2_TTF_BASE_NAME);\
+		__asm volatile("mr 12,%0": :"r"(__base):"r12");\
+		(((SDL_Surface *(*)(TTF_Font *, const char *, SDL_Color , SDL_Color ))*(void**)(__base - 466))(__t__p0, __t__p1, __t__p2, __t__p3));\
+	})
+
+#define TTF_RenderUTF8_LCD(__p0, __p1, __p2, __p3) \
+	({ \
+		TTF_Font * __t__p0 = __p0;\
+		const char * __t__p1 = __p1;\
+		SDL_Color  __t__p2 = __p2;\
+		SDL_Color  __t__p3 = __p3;\
+		long __base = (long)(SDL2_TTF_BASE_NAME);\
+		__asm volatile("mr 12,%0": :"r"(__base):"r12");\
+		(((SDL_Surface *(*)(TTF_Font *, const char *, SDL_Color , SDL_Color ))*(void**)(__base - 472))(__t__p0, __t__p1, __t__p2, __t__p3));\
+	})
+
+#define TTF_RenderUNICODE_LCD(__p0, __p1, __p2, __p3) \
+	({ \
+		TTF_Font * __t__p0 = __p0;\
+		const Uint16 * __t__p1 = __p1;\
+		SDL_Color  __t__p2 = __p2;\
+		SDL_Color  __t__p3 = __p3;\
+		long __base = (long)(SDL2_TTF_BASE_NAME);\
+		__asm volatile("mr 12,%0": :"r"(__base):"r12");\
+		(((SDL_Surface *(*)(TTF_Font *, const Uint16 *, SDL_Color , SDL_Color ))*(void**)(__base - 478))(__t__p0, __t__p1, __t__p2, __t__p3));\
+	})
+
+#define TTF_RenderText_LCD_Wrapped(__p0, __p1, __p2, __p3, __p4) \
+	({ \
+		TTF_Font * __t__p0 = __p0;\
+		const char * __t__p1 = __p1;\
+		SDL_Color  __t__p2 = __p2;\
+		SDL_Color  __t__p3 = __p3;\
+		Uint32  __t__p4 = __p4;\
+		long __base = (long)(SDL2_TTF_BASE_NAME);\
+		__asm volatile("mr 12,%0": :"r"(__base):"r12");\
+		(((SDL_Surface *(*)(TTF_Font *, const char *, SDL_Color , SDL_Color , Uint32 ))*(void**)(__base - 484))(__t__p0, __t__p1, __t__p2, __t__p3, __t__p4));\
+	})
+
+#define TTF_RenderUTF8_LCD_Wrapped(__p0, __p1, __p2, __p3, __p4) \
+	({ \
+		TTF_Font * __t__p0 = __p0;\
+		const char * __t__p1 = __p1;\
+		SDL_Color  __t__p2 = __p2;\
+		SDL_Color  __t__p3 = __p3;\
+		Uint32  __t__p4 = __p4;\
+		long __base = (long)(SDL2_TTF_BASE_NAME);\
+		__asm volatile("mr 12,%0": :"r"(__base):"r12");\
+		(((SDL_Surface *(*)(TTF_Font *, const char *, SDL_Color , SDL_Color , Uint32 ))*(void**)(__base - 490))(__t__p0, __t__p1, __t__p2, __t__p3, __t__p4));\
+	})
+
+#define TTF_RenderUNICODE_LCD_Wrapped(__p0, __p1, __p2, __p3, __p4) \
+	({ \
+		TTF_Font * __t__p0 = __p0;\
+		const Uint16 * __t__p1 = __p1;\
+		SDL_Color  __t__p2 = __p2;\
+		SDL_Color  __t__p3 = __p3;\
+		Uint32  __t__p4 = __p4;\
+		long __base = (long)(SDL2_TTF_BASE_NAME);\
+		__asm volatile("mr 12,%0": :"r"(__base):"r12");\
+		(((SDL_Surface *(*)(TTF_Font *, const Uint16 *, SDL_Color , SDL_Color , Uint32 ))*(void**)(__base - 496))(__t__p0, __t__p1, __t__p2, __t__p3, __t__p4));\
+	})
+
+#define TTF_RenderGlyph_LCD(__p0, __p1, __p2, __p3) \
+	({ \
+		TTF_Font * __t__p0 = __p0;\
+		Uint16  __t__p1 = __p1;\
+		SDL_Color  __t__p2 = __p2;\
+		SDL_Color  __t__p3 = __p3;\
+		long __base = (long)(SDL2_TTF_BASE_NAME);\
+		__asm volatile("mr 12,%0": :"r"(__base):"r12");\
+		(((SDL_Surface *(*)(TTF_Font *, Uint16 , SDL_Color , SDL_Color ))*(void**)(__base - 502))(__t__p0, __t__p1, __t__p2, __t__p3));\
+	})
+
+#define TTF_RenderGlyph32_LCD(__p0, __p1, __p2, __p3) \
+	({ \
+		TTF_Font * __t__p0 = __p0;\
+		Uint32  __t__p1 = __p1;\
+		SDL_Color  __t__p2 = __p2;\
+		SDL_Color  __t__p3 = __p3;\
+		long __base = (long)(SDL2_TTF_BASE_NAME);\
+		__asm volatile("mr 12,%0": :"r"(__base):"r12");\
+		(((SDL_Surface *(*)(TTF_Font *, Uint32 , SDL_Color , SDL_Color ))*(void**)(__base - 508))(__t__p0, __t__p1, __t__p2, __t__p3));\
+	})
+
+#define TTF_SetFontDirection(__p0, __p1) \
+	({ \
+		TTF_Font * __t__p0 = __p0;\
+		TTF_Direction  __t__p1 = __p1;\
+		long __base = (long)(SDL2_TTF_BASE_NAME);\
+		__asm volatile("mr 12,%0": :"r"(__base):"r12");\
+		(((int (*)(TTF_Font *, TTF_Direction ))*(void**)(__base - 514))(__t__p0, __t__p1));\
+	})
+
+#define TTF_SetFontScriptName(__p0, __p1) \
+	({ \
+		TTF_Font * __t__p0 = __p0;\
+		const char * __t__p1 = __p1;\
+		long __base = (long)(SDL2_TTF_BASE_NAME);\
+		__asm volatile("mr 12,%0": :"r"(__base):"r12");\
+		(((int (*)(TTF_Font *, const char *))*(void**)(__base - 520))(__t__p0, __t__p1));\
+	})
+
+#define TTF_GetFontWrappedAlign(__p0) \
+	({ \
+		const TTF_Font * __t__p0 = __p0;\
+		long __base = (long)(SDL2_TTF_BASE_NAME);\
+		__asm volatile("mr 12,%0": :"r"(__base):"r12");\
+		(((int (*)(const TTF_Font *))*(void**)(__base - 526))(__t__p0));\
+	})
+
+#define TTF_SetFontWrappedAlign(__p0, __p1) \
+	({ \
+		TTF_Font * __t__p0 = __p0;\
+		int  __t__p1 = __p1;\
+		long __base = (long)(SDL2_TTF_BASE_NAME);\
+		__asm volatile("mr 12,%0": :"r"(__base):"r12");\
+		(((void (*)(TTF_Font *, int ))*(void**)(__base - 532))(__t__p0, __t__p1));\
+	})
+
 #endif /* !_PPCINLINE_SDL2_TTF_H */

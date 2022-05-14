@@ -84,6 +84,18 @@ int TTF_GetFontKerningSizeGlyphs(TTF_Font *font, Uint16 previous_ch, Uint16 ch);
 int TTF_GetFontKerningSizeGlyphs32(TTF_Font *font, Uint32 previous_ch, Uint32 ch);
 void TTF_GetFreeTypeVersion(int *major, int *minor, int *patch);
 void TTF_GetHarfBuzzVersion(int *major, int *minor, int *patch);
+SDL_Surface * TTF_RenderText_LCD(TTF_Font *font, const char *text, SDL_Color fg, SDL_Color bg);
+SDL_Surface * TTF_RenderUTF8_LCD(TTF_Font *font, const char *text, SDL_Color fg, SDL_Color bg);
+SDL_Surface * TTF_RenderUNICODE_LCD(TTF_Font *font, const Uint16 *text, SDL_Color fg, SDL_Color bg);
+SDL_Surface * TTF_RenderText_LCD_Wrapped(TTF_Font *font, const char *text, SDL_Color fg, SDL_Color bg, Uint32 wrapLength);
+SDL_Surface * TTF_RenderUTF8_LCD_Wrapped(TTF_Font *font, const char *text, SDL_Color fg, SDL_Color bg, Uint32 wrapLength);
+SDL_Surface * TTF_RenderUNICODE_LCD_Wrapped(TTF_Font *font, const Uint16 *text, SDL_Color fg, SDL_Color bg, Uint32 wrapLength);
+SDL_Surface * TTF_RenderGlyph_LCD(TTF_Font *font, Uint16 ch, SDL_Color fg, SDL_Color bg);
+SDL_Surface * TTF_RenderGlyph32_LCD(TTF_Font *font, Uint32 ch, SDL_Color fg, SDL_Color bg);
+int TTF_SetFontDirection(TTF_Font *font, TTF_Direction direction);
+int TTF_SetFontScriptName(TTF_Font *font, const char *script);
+int TTF_GetFontWrappedAlign(const TTF_Font *font);
+void TTF_SetFontWrappedAlign(TTF_Font *font, int align);
 #ifdef __cplusplus
 }
 #endif
