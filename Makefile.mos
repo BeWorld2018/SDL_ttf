@@ -1,11 +1,11 @@
 # Makefile to build the SDL2_ttf library
 #
 CDEFS   = -DAROS_ALMOST_COMPATIBLE -DUSE_INLINE_STDARG -D__MORPHOS_SHAREDLIBS -D_NO_PPCINLINE \
-				   -DUSE_FREETYPE_ERRORS -DFT2_BUILD_LIBRARY -DTTF_USE_HARFBUZZ=1 
+				   -DUSE_FREETYPE_ERRORS -DTTF_USE_HARFBUZZ=1 
 
 CC      = ppc-morphos-gcc-9 -noixemul
 
-INCLUDE = -I/usr/local/include/SDL2 -I. -I./external/freetype-2.11.1/include
+INCLUDE = -I/usr/local/include/SDL2 -I. -I/usr/local/include
 CFLAGS  = -mcpu=750 -mtune=7450 -O2 $(INCLUDE) -mresident32 -Wall -Wno-pointer-sign -fno-strict-aliasing $(CDEFS)
 
 AR	= ppc-morphos-ar
@@ -27,54 +27,10 @@ LIBRARY = sdl2_ttf.library
 
 SOURCES = SDL_ttf.c
 
-FTSOURCES = \
-	src/autofit/autofit.c \
-	src/base/ftbase.c \
-	src/base/ftbbox.c \
-	src/base/ftbdf.c \
-	src/base/ftbitmap.c \
-	src/base/ftcid.c \
-	src/base/ftdebug.c \
-	src/base/ftfstype.c \
-	src/base/ftgasp.c \
-	src/base/ftglyph.c \
-	src/base/ftgxval.c \
-	src/base/ftinit.c \
-	src/base/ftmm.c \
-	src/base/ftotval.c \
-	src/base/ftpatent.c \
-	src/base/ftpfr.c \
-	src/base/ftstroke.c \
-	src/base/ftsynth.c \
-	src/base/ftsystem.c \
-	src/base/fttype1.c \
-	src/base/ftwinfnt.c \
-	src/bdf/bdf.c \
-	src/sdf/sdf.c \
-	src/bzip2/ftbzip2.c \
-	src/cache/ftcache.c \
-	src/cff/cff.c \
-	src/cid/type1cid.c \
-	src/gzip/ftgzip.c \
-	src/lzw/ftlzw.c \
-	src/pcf/pcf.c \
-	src/pfr/pfr.c \
-	src/psaux/psaux.c \
-	src/pshinter/pshinter.c \
-	src/psnames/psnames.c \
-	src/raster/raster.c \
-	src/sfnt/sfnt.c \
-	src/smooth/smooth.c \
-	src/truetype/truetype.c \
-	src/type1/type1.c \
-	src/type42/type42.c \
-	src/winfonts/winfnt.c
-
 CORESOURCES = morphos/*.c
 COREOBJECTS = $(shell echo $(CORESOURCES) | sed -e 's,\.c,\.o,g')
 
 OBJECTS = $(shell echo $(SOURCES) | sed -e 's,\.c,\.o,g')
-FTOBJECTS = $(addprefix external/freetype-2.11.1/, $(FTSOURCES:.c=.o))
 
 all: $(LIBRARY) sdklibs
 
@@ -108,7 +64,7 @@ $(TARGET): $(OBJECTS)  $(FTOBJECTS)
 
 $(LIBRARY): $(TARGET) $(COREOBJECTS)
 	$(LINKING)
-	$(CC) -nostartfiles -mresident32 -Wl,-Map=sdl2_ttf.map $(COREOBJECTS) -o $@.db -L. -lSDL2_ttf -L/usr/local/lib -lSDL2 -lm
+	$(CC) -nostartfiles -mresident32 -Wl,-Map=sdl2_ttf.map $(COREOBJECTS) -o $@.db -L. -lSDL2_ttf -L/usr/local/lib -lSDL2 -lfreetype -lm
 	$(STRIPPING)
 	@ppc-morphos-strip -o $@ --remove-section=.comment $@.db
 
