@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.14)
 # See docs/release_checklist.md
 set(MAJOR_VERSION 2)
 set(MINOR_VERSION 19)
-set(MICRO_VERSION 0)
+set(MICRO_VERSION 1)
 set(SDL_TTF_VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${MICRO_VERSION}")
 set(SDL_REQUIRED_VERSION 2.0.10)
 
@@ -56,13 +56,13 @@ project(SDL2_ttf LANGUAGES C
 
 message(STATUS "Configuring ${PROJECT_NAME} ${PROJECT_VERSION}")
 
-if (NOT ANDROID AND NOT (TARGET SDL2::SDL2 OR TARGET SDL2::SDL2-static))
+if (NOT (TARGET SDL2::SDL2 OR TARGET SDL2::SDL2-static))
     find_package(SDL2 REQUIRED)
 endif()
 
 # Workaround for Ubuntu 20.04's SDL being older than
 # https://github.com/libsdl-org/SDL/issues/3531
-if (NOT TARGET SDL2::SDL2)
+if (NOT (TARGET SDL2::SDL2 OR TARGET SDL2::SDL2-static))
     find_library(SDL2_LIBRARY
         NAMES SDL2
         HINTS "${SDL2_EXEC_PREFIX}"
@@ -82,6 +82,7 @@ endif()
 include(CMakeDependentOption)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
+include(CheckSymbolExists)
 
 option(VENDORED_DEFAULT "Default value for *_VENDORED options. Can be overridden for each library. Is only used in the first configure run." ON)
 
@@ -102,6 +103,13 @@ if(BUILD_SHARED_LIBS)
 else()
     set(sdl2_ttf_export_name SDL2_ttf-static)
     set(sdl2_ttf_install_name_infix static)
+endif()
+
+# Enable large file support on 32-bit glibc, so that the vendored libraries
+# can access files with large inode numbers
+check_symbol_exists("__GLIBC__" "stdlib.h" LIBC_IS_GLIBC)
+if (LIBC_IS_GLIBC AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+    add_compile_definitions(PRIVATE _FILE_OFFSET_BITS=64)
 endif()
 
 add_library(SDL2_ttf
@@ -125,6 +133,12 @@ endif()
 set(INSTALL_EXTRA_TARGETS)
 set(PC_LIBS)
 set(PC_REQUIRES)
+
+# Save BUILD_SHARED_LIBS variable
+set(SDL2TTF_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+
+# Build freetype and harfbuzz as a static library (avoid cyclic dependency between shared libraries)
+set(BUILD_SHARED_LIBS OFF)
 
 if (TTF_WITH_HARFBUZZ)
     target_compile_definitions(SDL2_ttf PRIVATE TTF_USE_HARFBUZZ=1)
@@ -173,6 +187,9 @@ if (TTF_WITH_FREETYPE)
     target_link_libraries(SDL2_ttf PRIVATE Freetype::Freetype)
 endif()
 
+# Restore BUILD_SHARED_LIBS variable
+set(BUILD_SHARED_LIBS ${SDL2TTF_BUILD_SHARED_LIBS})
+
 set_target_properties(SDL2_ttf PROPERTIES
     DEFINE_SYMBOL DLL_EXPORT
     PUBLIC_HEADER SDL_ttf.h
@@ -213,6 +230,11 @@ endif()
 if (WIN32 AND BUILD_SHARED_LIBS)
     target_sources(SDL2_ttf PRIVATE version.rc)
 endif()
+
+target_include_directories(SDL2_ttf
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/SDL2>
+    )
 
 if (NOT TTF_DISABLE_INSTALL)
     install(
@@ -275,7 +297,7 @@ if (NOT TTF_DISABLE_INSTALL)
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/SDL2_ttf.pc
             DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
     endif ()
-    install(FILES "COPYING.txt" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/licenses/${PROJECT_NAME}")
+    install(FILES "LICENSE.txt" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/licenses/${PROJECT_NAME}")
     if (NOT (WIN32 OR CYGWIN OR MINGW))
         if(BUILD_SHARED_LIBS)
             if(NOT ANDROID)

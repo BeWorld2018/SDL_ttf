@@ -290,7 +290,9 @@ struct _TTF_Font {
     int render_subpixel;
 #if TTF_USE_HARFBUZZ
     hb_font_t *hb_font;
+    /* If HB_SCRIPT_INVALID, use global default script */
     hb_script_t hb_script;
+    /* If HB_DIRECTION_INVALID, use global default direction */
     hb_direction_t hb_direction;
 #endif
     int render_sdf;
@@ -1002,10 +1004,15 @@ static void Draw_Line(TTF_Font *font, const SDL_Surface *textbuf, int column, in
     int tmp    = row + line_thickness - textbuf->h;
     int x_offset = column * textbuf->format->BytesPerPixel;
     Uint8 *dst = (Uint8 *)textbuf->pixels + row * textbuf->pitch + x_offset;
-
 #if TTF_USE_HARFBUZZ
+    hb_direction_t hb_direction = font->hb_direction;
+
+    if (hb_direction == HB_DIRECTION_INVALID) {
+        hb_direction = g_hb_direction;
+    }
+
     /* No Underline/Strikethrough style if direction is vertical */
-    if (font->hb_direction == HB_DIRECTION_TTB || font->hb_direction == HB_DIRECTION_BTT) {
+    if (hb_direction == HB_DIRECTION_TTB || hb_direction == HB_DIRECTION_BTT) {
         return;
     }
 #endif
@@ -1873,9 +1880,9 @@ TTF_Font* TTF_OpenFontIndexDPIRW(SDL_RWops *src, int freesrc, int ptsize, long i
      * you will get mismatching advances and raster. */
     hb_ft_font_set_load_flags(font->hb_font, FT_LOAD_DEFAULT | font->ft_load_target);
 
-    /* Default value script / direction */
-    font->hb_script = g_hb_script;
-    font->hb_direction = g_hb_direction;
+    /* By default the script / direction are inherited from global variables */
+    font->hb_script = HB_SCRIPT_INVALID;
+    font->hb_direction = HB_DIRECTION_INVALID;
 #endif
 
     if (TTF_SetFontSizeDPI(font, ptsize, hdpi, vdpi) < 0) {
@@ -3116,6 +3123,8 @@ static int TTF_Size_Internal(TTF_Font *font,
     Uint8 *utf8_alloc = NULL;
     c_glyph *glyph;
 #if TTF_USE_HARFBUZZ
+    hb_direction_t hb_direction;
+    hb_script_t hb_script;
     hb_buffer_t *hb_buffer = NULL;
     unsigned int g;
     unsigned int glyph_count;
@@ -3171,9 +3180,21 @@ static int TTF_Size_Internal(TTF_Font *font,
        goto failure;
     }
 
+
+    hb_direction = font->hb_direction;
+    hb_script = font->hb_script;
+
+    if (hb_script == HB_SCRIPT_INVALID) {
+        hb_script = g_hb_script;
+    }
+
+    if (hb_direction == HB_DIRECTION_INVALID) {
+        hb_direction = g_hb_direction;
+    }
+
     /* Set global configuration */
-    hb_buffer_set_direction(hb_buffer, font->hb_direction);
-    hb_buffer_set_script(hb_buffer, font->hb_script);
+    hb_buffer_set_direction(hb_buffer, hb_direction);
+    hb_buffer_set_script(hb_buffer, hb_script);
 
     /* Layout the text */
     hb_buffer_add_utf8(hb_buffer, text, -1, 0, -1);
@@ -3283,11 +3304,13 @@ static int TTF_Size_Internal(TTF_Font *font,
         if (measure_width) {
             int cw = SDL_max(maxx, FT_FLOOR(x + prev_advance)) - minx;
             cw += 2 * font->outline_val;
+            if (cw <= measure_width) {
+                current_width = cw;
+                char_count += 1;
+            }
             if (cw >= measure_width) {
                 break;
             }
-            current_width = cw;
-            char_count += 1;
         }
     }
 
@@ -3331,7 +3354,21 @@ static int TTF_Size_Internal(TTF_Font *font,
             *extent = current_width;
         }
         if (count) {
-            *count = char_count;
+#if TTF_USE_HARFBUZZ
+            if (char_count == glyph_count) {
+                /* The higher level code doesn't know about ligatures,
+                 * so if we've covered all the glyphs, report the full
+                 * string length.
+                 *
+                 * If we have to line wrap somewhere in the middle, we
+                 * might be off by the number of ligatures, but there
+                 * isn't an easy way around that without using hb_buffer
+                 * at that level instead.
+                 */
+                *count = SDL_utf8strlen(text);
+            } else
+#endif
+                *count = char_count;
         }
     }
 
