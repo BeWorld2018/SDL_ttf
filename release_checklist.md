@@ -30,6 +30,9 @@
         * set second number in `DYLIB_CURRENT_VERSION` to 0
         * if backwards compatibility has been broken,
             increase `DYLIB_COMPATIBILITY_VERSION` (?)
+    * `CMakeLists.txt`:
+		* if backwards compatibility has been broken,
+		  increase `DYLIB_COMPATIBILITY_VERSION` (?)
 
 * Run `./test-versioning.sh` to verify that everything is consistent
 
@@ -49,9 +52,9 @@
 
 * Bump ABI version information
 
-    * `Xcode/SDL_ttf.xcodeproj/project.pbxproj`:
-        `DYLIB_CURRENT_VERSION`, `DYLIB_COMPATIBILITY_VERSION`
-        * set second number in `DYLIB_CURRENT_VERSION` to *patchlevel*
+	* `Xcode/SDL_ttf.xcodeproj/project.pbxproj`:
+	  `DYLIB_CURRENT_VERSION`, `DYLIB_COMPATIBILITY_VERSION`
+		* set second number in `DYLIB_CURRENT_VERSION` to *patchlevel*
 
 * Run test/versioning.sh to verify that everything is consistent
 
@@ -74,6 +77,8 @@
 
 * Run test/versioning.sh to verify that everything is consistent
 
+* Add a new milestone for issues
+
 ## New development prerelease
 
 * Bump version number from 2.Y.Z to 2.Y.(Z+1) (Y is odd)
@@ -82,13 +87,17 @@
 
 * Bump ABI version information
 
-    * `Xcode/SDL_ttf.xcodeproj/project.pbxproj`:
-        `DYLIB_CURRENT_VERSION`, `DYLIB_COMPATIBILITY_VERSION`
-        * set first number in `DYLIB_CURRENT_VERSION` to
-            (100 * *minor*) + *patchlevel* + 1
-        * set second number in `DYLIB_CURRENT_VERSION` to 0
-        * if backwards compatibility has been broken,
-            increase `DYLIB_COMPATIBILITY_VERSION` (?)
+	* `Xcode/SDL_ttf.xcodeproj/project.pbxproj`:
+	  `DYLIB_CURRENT_VERSION`, `DYLIB_COMPATIBILITY_VERSION`
+		* set first number in `DYLIB_CURRENT_VERSION` to
+		  (100 * *minor*) + *patchlevel* + 1
+		* set second number in `DYLIB_CURRENT_VERSION` to 0
+		* if backwards compatibility has been broken,
+		  increase `DYLIB_COMPATIBILITY_VERSION` (?)
+	* `CMakeLists.txt`:
+	  `DYLIB_COMPATIBILITY_VERSION`
+		* if backwards compatibility has been broken,
+		  increase `DYLIB_COMPATIBILITY_VERSION` (?)
 
 * Run test/versioning.sh to verify that everything is consistent
 

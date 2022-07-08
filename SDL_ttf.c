@@ -2771,9 +2771,21 @@ static size_t LATIN1_to_UTF8_len(const char *text)
 /* Gets the number of bytes needed to convert a UCS2 string to UTF-8 */
 static size_t UCS2_to_UTF8_len(const Uint16 *text)
 {
+    SDL_bool swapped = TTF_byteswapped;
     size_t bytes = 1;
     while (*text) {
         Uint16 ch = *text++;
+        if (ch == UNICODE_BOM_NATIVE) {
+            swapped = SDL_FALSE;
+            continue;
+        }
+        if (ch == UNICODE_BOM_SWAPPED) {
+            swapped = SDL_TRUE;
+            continue;
+        }
+        if (swapped) {
+            ch = SDL_Swap16(ch);
+        }
         if (ch <= 0x7F) {
             bytes += 1;
         } else if (ch <= 0x7FF) {
@@ -3007,12 +3019,14 @@ int TTF_FontFaceIsFixedWidth(const TTF_Font *font)
     return FT_IS_FIXED_WIDTH(font->face);
 }
 
-char* TTF_FontFaceFamilyName(const TTF_Font *font)
+const char *
+TTF_FontFaceFamilyName(const TTF_Font *font)
 {
     return font->face->family_name;
 }
 
-char* TTF_FontFaceStyleName(const TTF_Font *font)
+const char *
+TTF_FontFaceStyleName(const TTF_Font *font)
 {
     return font->face->style_name;
 }
@@ -3365,7 +3379,7 @@ static int TTF_Size_Internal(TTF_Font *font,
                  * isn't an easy way around that without using hb_buffer
                  * at that level instead.
                  */
-                *count = SDL_utf8strlen(text);
+                *count = (int)SDL_utf8strlen(text);
             } else
 #endif
                 *count = char_count;
