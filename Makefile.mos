@@ -3,7 +3,7 @@
 CDEFS   = -DAROS_ALMOST_COMPATIBLE -DUSE_INLINE_STDARG -D__MORPHOS_SHAREDLIBS -D_NO_PPCINLINE \
 				   -DUSE_FREETYPE_ERRORS -DTTF_USE_HARFBUZZ=1 
 
-CC      = ppc-morphos-gcc-9 -noixemul
+CC      = ppc-morphos-gcc-11 -noixemul
 
 INCLUDE = -I/usr/local/include/SDL2 -I. -I/usr/local/include
 CFLAGS  = -mcpu=750 -mtune=7450 -O2 $(INCLUDE) -mresident32 -Wall -Wno-pointer-sign -fno-strict-aliasing $(CDEFS)
