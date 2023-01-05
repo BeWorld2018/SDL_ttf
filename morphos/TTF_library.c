@@ -158,14 +158,11 @@ static BPTR DeleteLib(struct SDL2TTFLibrary *LibBase, struct ExecBase *SysBase)
 static void UserLibClose(struct SDL2TTFLibrary *LibBase, struct ExecBase *SysBase)
 {
 
-	//if (FreetypeBase) {
-	//	CloseLibrary(FreetypeBase);
-	//	FreetypeBase = NULL;
-	//}
-	if (HarfbuzzBase) {
-		CloseLibrary(HarfbuzzBase);
-		HarfbuzzBase = NULL;
-	}
+	//CloseLibrary(SDL2Base);
+	CloseLibrary(HarfbuzzBase);
+
+	//SDL2Base = NULL;
+	HarfbuzzBase = NULL;
 	
 }
 
@@ -259,8 +256,9 @@ struct Library *LIB_Open(void)
 
 	if (LibBase->Alloc == 0)
 	{
-		if ((HarfbuzzBase = OpenLibrary("harfbuzz.library", 0 )) != NULL)
-		// /*&& ((FreetypeBase = OpenLibrary("freetype.library", 2 )) != NULL)*/)
+		if ((/*SDL2Base = OpenLibrary("sdl2.library",  0)) != NULL)
+		&&*/ (HarfbuzzBase = OpenLibrary("harfbuzz.library", 0 )) != NULL))
+		/*&& ((FreetypeBase = OpenLibrary("freetype.library", 2 )) != NULL))*/
 		{
 			LibBase->Alloc = 1;
 		}
