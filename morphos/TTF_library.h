@@ -23,12 +23,6 @@
 
 #include <SDL_ttf.h>
 
-struct CTDT
-{
-	int	(*fp)(void);
-	long	priority;
-};
-
 struct HunkSegment
 {
 	unsigned int Size;
@@ -62,8 +56,6 @@ struct SDL2TTFLibrary
 	// library management
 
 	struct SignalSemaphore Semaphore;
-	APTR ctdtlist;
-	APTR last_ctdt;
 };
 
 #endif /* SDL_TTF_LIBRARY_H */
