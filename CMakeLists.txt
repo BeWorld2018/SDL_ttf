@@ -42,6 +42,12 @@ else()
     set(vendored_default FALSE)
 endif()
 
+set(sdl2ttf_install_enableable ON)
+if ((TARGET SDL2 OR TARGET SDL2-static) AND SDL2_DISABLE_INSTALL)
+    # Cannot install SDL2_mixer when SDL2 is built in same built, and is not installed.
+    set(sdl2ttf_install_enableable OFF)
+endif()
+
 include(CMakeDependentOption)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -51,7 +57,7 @@ option(CMAKE_POSITION_INDEPENDENT_CODE "Build static libraries with -fPIC" ON)
 option(BUILD_SHARED_LIBS "Build the library as a shared library" ON)
 
 option(SDL2TTF_SAMPLES "Build the SDL2_ttf sample program(s)" ${SDL2TTF_ROOTPROJECT})
-option(SDL2TTF_INSTALL "Enable SDL2_ttf install target" ${SDL2TTF_ROOTPROJECT})
+cmake_dependent_option(SDL2TTF_INSTALL "Enable SDL2_ttf install target" ${SDL2TTF_ROOTPROJECT} "${sdl2ttf_install_enableable}" OFF)
 option(SDL2TTF_VENDORED "Use vendored third-party libraries" ${vendored_default})
 
 # For style consistency, create a SDL2TTF_FREETYPE CMake variable. This variable is NOT configurable.
@@ -156,6 +162,15 @@ if(SDL2TTF_BUILD_SHARED_LIBS)
     # Use `Compatible Interface Properties` to ensure a shared SDL2_ttf is linked to a shared SDL2 library
     set_property(TARGET SDL2_ttf PROPERTY INTERFACE_SDL2_SHARED ${SDL2TTF_BUILD_SHARED_LIBS})
     set_property(TARGET SDL2_ttf APPEND PROPERTY COMPATIBLE_INTERFACE_BOOL SDL2_SHARED)
+endif()
+
+if(SDL2TTF_BUILD_SHARED_LIBS)
+    sdl_target_link_options_no_undefined(SDL2_ttf)
+endif()
+
+if(SDL2TTF_BUILD_SHARED_LIBS)
+    # Make sure static library dependencies are built with -fPIC when building a shared SDL2_ttf
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
 set(INSTALL_EXTRA_TARGETS)
