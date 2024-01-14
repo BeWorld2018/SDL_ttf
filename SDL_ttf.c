@@ -1,6 +1,6 @@
 /*
   SDL_ttf:  A companion library to SDL for working with TrueType (tm) fonts
-  Copyright (C) 2001-2023 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 2001-2024 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -416,7 +416,9 @@ static SDL_INLINE void BG_Blended_Color(const TTF_Image *image, Uint32 *destinat
         while (height--) {
             /* *INDENT-OFF* */
             DUFFS_LOOP4(
-                    tmp = *src++;
+                    /* prevent misaligned load: tmp = *src++; */
+                    /* eventually, we can expect the compiler to replace the memcpy call with something optimized */
+                    memcpy(&tmp, src++, sizeof(tmp)); /* This should NOT be SDL_memcpy */
                     alpha = tmp >> 24;
                     tmp &= ~0xFF000000;
                     alpha = fg_alpha * alpha;
@@ -451,7 +453,8 @@ static SDL_INLINE void BG_Blended_LCD(const TTF_Image *image, Uint32 *destinatio
     while (height--) {
         /* *INDENT-OFF* */
         DUFFS_LOOP4(
-                tmp = *src++;
+                /* prevent misaligned load: tmp = *src++; */
+                memcpy(&tmp, src++, sizeof(tmp)); /* This should NOT be SDL_memcpy */
 
                 if (tmp) {
                     bg = *dst;
@@ -507,7 +510,7 @@ static SDL_INLINE void BG_Blended_Opaque_SDF(const TTF_Image *image, Uint32 *des
         /* *INDENT-OFF* */
         DUFFS_LOOP4(
             d = *dst;
-            s = *src++ << 24;
+            s = ((Uint32)*src++) << 24;
             if (s > d) {
                 *dst = s;
             }
@@ -561,7 +564,7 @@ static SDL_INLINE void BG_Blended_Opaque(const TTF_Image *image, Uint32 *destina
     while (height--) {
         /* *INDENT-OFF* */
         DUFFS_LOOP4(
-            *dst++ |= *src++ << 24;
+            *dst++ |= ((Uint32)*src++) << 24;
         , width);
         /* *INDENT-ON* */
         src += srcskip;
@@ -602,10 +605,10 @@ static SDL_INLINE void BG_Blended_Opaque_32(const TTF_Image *image, Uint32 *dest
     while (height--) {
         /* *INDENT-OFF* */
         DUFFS_LOOP4(
-            *dst++ |= *src++ << 24;
-            *dst++ |= *src++ << 24;
-            *dst++ |= *src++ << 24;
-            *dst++ |= *src++ << 24;
+            *dst++ |= ((Uint32)*src++) << 24;
+            *dst++ |= ((Uint32)*src++) << 24;
+            *dst++ |= ((Uint32)*src++) << 24;
+            *dst++ |= ((Uint32)*src++) << 24;
         , width);
         /* *INDENT-ON* */
         src += srcskip;
@@ -908,11 +911,14 @@ static SDL_INLINE void BG_64(const TTF_Image *image, Uint8 *destination, Sint32 
     Uint64       *dst    = (Uint64 *)destination;
     Uint32        width  = image->width / 8;
     Uint32        height = image->rows;
+    Uint64        tmp;
 
     while (height--) {
         /* *INDENT-OFF* */
         DUFFS_LOOP4(
-            *dst++ |= *src++;
+              /* prevent misaligned load: *dst++ |= *src++; */
+              memcpy(&tmp, src++, sizeof(tmp)); /* This should NOT be SDL_memcpy */
+              *dst++ |= tmp;
         , width);
         /* *INDENT-ON* */
         src = (const Uint64 *)((const Uint8 *)src + srcskip);
@@ -926,11 +932,14 @@ static SDL_INLINE void BG_32(const TTF_Image *image, Uint8 *destination, Sint32 
     Uint32       *dst    = (Uint32 *)destination;
     Uint32        width  = image->width / 4;
     Uint32        height = image->rows;
+    Uint32        tmp;
 
     while (height--) {
         /* *INDENT-OFF* */
         DUFFS_LOOP4(
-            *dst++ |= *src++;
+            /* prevent misaligned load: *dst++ |= *src++; */
+            memcpy(&tmp, src++, sizeof(tmp)); /* This should NOT be SDL_memcpy */
+            *dst++ |= tmp;
         , width);
         /* *INDENT-ON* */
         src = (const Uint32 *)((const Uint8 *)src + srcskip);
@@ -1565,7 +1574,7 @@ static SDL_Surface *Create_Surface_Blended(int width, int height, SDL_Color fg, 
     bgcolor = (fg.r << 16) | (fg.g << 8) | fg.b;
 
     /* Underline/Strikethrough color style */
-    *color = bgcolor | (fg.a << 24);
+    *color = bgcolor | ((Uint32)fg.a << 24);
 
     /* Create the target surface if required */
     if (width != 0) {
@@ -1589,10 +1598,10 @@ static SDL_Surface* Create_Surface_LCD(int width, int height, SDL_Color fg, SDL_
     Uint32 bgcolor;
 
     /* Background color */
-    bgcolor = (bg.a << 24) | (bg.r << 16) | (bg.g << 8) | bg.b;
+    bgcolor = (((Uint32)bg.a) << 24) | (bg.r << 16) | (bg.g << 8) | bg.b;
 
     /* Underline/Strikethrough color style */
-    *color = (bg.a << 24) | (fg.r << 16) | (fg.g << 8) | fg.b;
+    *color = (((Uint32)bg.a) << 24) | (fg.r << 16) | (fg.g << 8) | fg.b;
 
     /* Create the target surface if required */
     if (width != 0) {
@@ -3921,6 +3930,7 @@ static SDL_Surface* TTF_Render_Wrapped_Internal(TTF_Font *font, const char *text
         } else {
             xoffset = 0;
         }
+        xoffset = SDL_max(0, xoffset);
 
         /* Render one text line to textbuf at (xstart, ystart) */
         if (Render_Line(render_mode, font->render_subpixel, font, textbuf, xstart + xoffset, ystart, fg) < 0) {
