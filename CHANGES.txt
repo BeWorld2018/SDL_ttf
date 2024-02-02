@@ -1,5 +1,5 @@
-2.22.1:
- * Updated autotools to use ax_compute_relative_paths, fixing homebrew on macOS
+2.22.0:
+ * Updated to FreeType version 2.13.2 and HarfBuzz version 8.1.1
 
 2.20.0:
  * Added support for building with CMake
@@ -30,15 +30,15 @@ David Ludwig - Dec 28, 2019
     TTF_OpenFontDPIRW()
     TTF_OpenFontIndexDPIRW()
     TTF_SetFontSizeDPI()
-Weard Anaether - Dec 2, 2019 
+Weard Anaether - Dec 2, 2019
  * Added 32-bit character support with:
     TTF_RenderGlyph32_Solid()
     TTF_RenderGlyph32_Shaded()
     TTF_RenderGlyph32_Blended()
     TTF_GetFontKerningSizeGlyphs32()
-Arthur Danskin - Sep 3, 2019 
+Arthur Danskin - Sep 3, 2019
  * Added 32-bit character support with TTF_GlyphIsProvided32() and TTF_GlyphMetrics32()
-Sylvain - Apr 5, 2019 
+Sylvain - Apr 5, 2019
  * Added functions to set direction and script when using Harfbuzz:
     TTF_SetDirection()
     TTF_SetScript()
