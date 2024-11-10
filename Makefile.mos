@@ -6,7 +6,7 @@ CDEFS   = -DAROS_ALMOST_COMPATIBLE -DUSE_INLINE_STDARG -D__MORPHOS_SHAREDLIBS -D
 CC      = ppc-morphos-gcc-11 -noixemul
 
 INCLUDE = -I/usr/local/include/SDL2 -I. -I/usr/local/include
-CFLAGS  = -mcpu=750 -mtune=7450 -O2 $(INCLUDE) -mresident32 -Wall -Wno-pointer-sign -fno-strict-aliasing $(CDEFS)
+CFLAGS  = -mcpu=750 -mtune=7450 -O3 $(INCLUDE) -mresident32 -Wall -Wno-pointer-sign -fno-strict-aliasing $(CDEFS)
 
 AR	= ppc-morphos-ar
 
@@ -64,15 +64,15 @@ $(TARGET): $(OBJECTS)  $(FTOBJECTS)
 
 $(LIBRARY): $(TARGET) $(COREOBJECTS)
 	$(LINKING)
-	$(CC) -nostartfiles -mresident32 -Wl,-Map=sdl2_ttf.map $(COREOBJECTS) -o $@.db -L. -lSDL2_ttf -L/usr/local/lib -lSDL2 -lfreetype -lm
+	$(CC) -nostartfiles -mresident32 -Wl,-Map=sdl2_ttf.map $(COREOBJECTS) -o $@.db -L. -lSDL2_ttf -L/usr/local/lib -lSDL2 -lGL -lfreetype -lm
 	$(STRIPPING)
 	@ppc-morphos-strip -o $@ --remove-section=.comment $@.db
 
 glfont: sdklibs glfont.c
-	$(CC) -O2 -Wall glfont.c -o $@ $(INCLUDE) -DUSE_INLINE_STDARG -DHAVE_OPENGL -Lmorphos/devenv/lib -lSDL2_ttf -L/usr/local/lib -lSDL2
+	$(CC) -O2 -Wall glfont.c -o $@ $(INCLUDE) -DUSE_INLINE_STDARG -DHAVE_OPENGL -Lmorphos/devenv/lib -lSDL2_ttf -L/usr/local/lib -lSDL2 -lGL
 
 showfont: sdklibs showfont.c
-	$(CC) -O2 -Wall showfont.c -o $@ $(INCLUDE) -DUSE_INLINE_STDARG -Lmorphos/devenv/lib -lSDL2_ttf -L/usr/local/lib -lSDL2
+	$(CC) -O2 -Wall showfont.c -o $@ $(INCLUDE) -DUSE_INLINE_STDARG -Lmorphos/devenv/lib -lSDL2_ttf -L/usr/local/lib -lSDL2 -lGL
 
 clean:
 	rm -f $(LIBRARY) $(TARGET) $(OBJECTS) $(FTOBJECTS) $(COREOBJECTS) *.db *.s
