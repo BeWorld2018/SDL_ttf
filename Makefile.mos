@@ -1,0 +1,122 @@
+# Makefile to build the libSDL3_ttf.a
+#
+CDEFS   = -DUSE_FREETYPE_ERRORS  -DFT2_BUILD_LIBRARY -DNDEBUG -D__MORPHOS_SHAREDLIBS -DTTF_USE_HARFBUZZ=1 \
+		  -DTTF_USE_PLUTOSVG=1 -DPLUTOSVG_BUILD_STATIC -DPLUTOVG_BUILD_STATIC
+
+# Features:   
+# include Freetype, Plutosvg, Plutovg into static lib
+
+CC      = ppc-morphos-gcc-11
+
+DIRFT = external/freetype
+DIRSVG = external/plutosvg
+DIRVG = external/plutovg
+
+INCLUDE =  -I./$(DIRVG)/include -I./$(DIRSVG)/source -I./$(DIRFT)/build/amiga/include -I./$(DIRFT)/include -I/gg/usr/local/include -I./include
+SDL3_LIBS =  -noixemul -L/gg/usr/local/lib -lSDL3 -lGL -lc -lm -lpthread 
+CFLAGS  =  -noixemul -O3 $(INCLUDE) -Wall -Wno-pointer-sign -fno-strict-aliasing $(CDEFS)
+
+AR	= ppc-morphos-ar
+
+ECHE = echo -e
+BOLD = \033[1m
+NRML = \033[22m
+
+COMPILING = @$(ECHE) "compiling $(BOLD)$@$(NRML)..."
+ARCHIVING = @$(ECHE) "archiving $(BOLD)$@$(NRML)..."
+
+TARGET  = libSDL3_ttf.a
+
+SRC_SDLTTF = src/SDL_hashtable.c \
+			src/SDL_hashtable_ttf.c \
+			src/SDL_gpu_textengine.c \
+			src/SDL_renderer_textengine.c \
+			src/SDL_surface_textengine.c \
+			src/SDL_ttf.c
+
+SRC_FT = 	$(DIRFT)/src/base/ftinit.c \
+			$(DIRFT)/src/base/ftbase.c \
+			$(DIRFT)/src/base/ftbbox.c \
+			$(DIRFT)/src/base/ftbdf.c \
+			$(DIRFT)/src/base/ftbitmap.c \
+			$(DIRFT)/src/base/ftcid.c \
+			$(DIRFT)/src/base/ftfstype.c \
+			$(DIRFT)/src/base/ftgasp.c \
+			$(DIRFT)/src/base/ftglyph.c \
+			$(DIRFT)/src/base/ftgxval.c \
+			$(DIRFT)/src/base/ftmm.c \
+			$(DIRFT)/src/base/ftotval.c \
+			$(DIRFT)/src/base/ftpatent.c \
+			$(DIRFT)/src/base/ftpfr.c \
+			$(DIRFT)/src/base/ftstroke.c \
+			$(DIRFT)/src/base/ftsynth.c \
+			$(DIRFT)/src/base/fttype1.c \
+			$(DIRFT)/src/base/ftwinfnt.c \
+			$(DIRFT)/src/autofit/autofit.c \
+			$(DIRFT)/src/gxvalid/gxvalid.c \
+			$(DIRFT)/src/otvalid/otvalid.c \
+			$(DIRFT)/src/psaux/psaux.c \
+			$(DIRFT)/src/psnames/psnames.c \
+			$(DIRFT)/src/pshinter/pshinter.c \
+			$(DIRFT)/src/raster/raster.c \
+			$(DIRFT)/src/smooth/smooth.c \
+			$(DIRFT)/src/sfnt/sfnt.c \
+			$(DIRFT)/src/cache/ftcache.c \
+			$(DIRFT)/src/cff/cff.c \
+			$(DIRFT)/src/type1/type1.c \
+			$(DIRFT)/src/type42/type42.c \
+			$(DIRFT)/src/cid/type1cid.c \
+			$(DIRFT)/src/truetype/truetype.c \
+			$(DIRFT)/src/bdf/bdf.c \
+			$(DIRFT)/src/pcf/pcf.c \
+			$(DIRFT)/src/pfr/pfr.c \
+			$(DIRFT)/src/winfonts/winfnt.c \
+			$(DIRFT)/src/sdf/sdf.c \
+			$(DIRFT)/src/svg/svg.c \
+			$(DIRFT)/src/gzip/ftgzip.c \
+			$(DIRFT)/src/bzip2/ftbzip2.c \
+			$(DIRFT)/src/lzw/ftlzw.c \
+			$(DIRFT)/builds/amiga/src/base/ftsystem.c \
+			$(DIRFT)/builds/amiga/src/base/ftdebug.c
+ 
+SRC_SVG =	$(DIRSVG)/source/plutosvg.c
+
+SRC_VG =    $(DIRVG)/source/plutovg-blend.c \
+			$(DIRVG)/source/plutovg-canvas.c \
+			$(DIRVG)/source/plutovg-font.c \
+			$(DIRVG)/source/plutovg-matrix.c \
+			$(DIRVG)/source/plutovg-paint.c \
+			$(DIRVG)/source/plutovg-path.c \
+			$(DIRVG)/source/plutovg-rasterize.c \
+			$(DIRVG)/source/plutovg-surface.c \
+			$(DIRVG)/source/plutovg-ft-math.c \
+			$(DIRVG)/source/plutovg-ft-raster.c \
+			$(DIRVG)/source/plutovg-ft-stroker.c
+ 
+SOURCES = $(SRC_SDLTTF) $(SRC_FT) $(SRC_SVG) $(SRC_VG)
+
+OBJECTS = $(shell echo $(SOURCES) | sed -e 's,\.c,\.o,g')
+
+all: $(TARGET) glfont showfont
+
+install: all
+	cp -r include/SDL3_ttf /gg/usr/local/include/
+	cp libSDL3_ttf.a /gg/usr/local/lib/libSDL3_ttf.a
+
+$(TARGET): $(OBJECTS)
+	$(ARCHIVING)
+	@$(AR) crvs $@ $^
+
+glfont: examples/glfont.c
+	$(COMPILING)
+	$(CC) -O3 -noixemul -Wall examples/glfont.c -o $@ $(INCLUDE) -DHAVE_OPENGL -L. -lSDL3_ttf $(SDL3_LIBS)
+
+showfont: examples/showfont.c
+	$(COMPILING)
+	$(CC) -O3 -noixemul -Wall examples/showfont.c examples/editbox.c -o $@ $(INCLUDE) -L. -lSDL3_ttf $(SDL3_LIBS)
+
+clean:
+	rm -f $(TARGET) $(OBJECTS) *.db *.s glfont showfont
+
+dump:
+	ppc-morphos-objdump --disassemble-all --reloc $(showfont) >$(showfont).s

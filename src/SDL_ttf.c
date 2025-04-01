@@ -34,6 +34,11 @@
 #include FT_TRUETYPE_TABLES_H
 #include FT_IMAGE_H
 
+#ifdef __MORPHOS__
+#include <proto/exec.h>
+struct Library *HarfbuzzBase = NULL;
+#endif
+
 /* Enable rendering with color
  * Freetype may need to be compiled with FT_CONFIG_OPTION_USE_PNG */
 #if defined(FT_HAS_COLOR)
@@ -1800,6 +1805,14 @@ static bool TTF_SetFTError(const char *msg, FT_Error error)
 bool TTF_Init(void)
 {
     bool result = true;
+
+#ifdef __MORPHOS__
+	if ((HarfbuzzBase = OpenLibrary("harfbuzz.library", 0 )) == NULL)
+	{
+			TTF_SetFTError("Couldn't open harfbuzz.library !", 0);
+			result = false;
+	}
+#endif
 
 // Some debug to know how it gets compiled
 #if 0
@@ -6160,6 +6173,13 @@ void TTF_Quit(void)
         SDL_DestroyMutex(TTF_state.lock);
         TTF_state.lock = NULL;
     }
+
+#ifdef __MORPHOS__
+	if (HarfbuzzBase) {
+		CloseLibrary(HarfbuzzBase);
+		HarfbuzzBase = NULL;
+	}
+#endif
 
     SDL_SetInitialized(&TTF_state.init, false);
 }
