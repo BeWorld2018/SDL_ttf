@@ -58,3 +58,5 @@ Release
 
 # for Clangd
 .cache
+external/freetype
+external/harfbuzz
