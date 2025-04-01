@@ -18,3 +18,5 @@ xcuserdata
 SDL2_ttf.pc
 glfont
 showfont
+external/freetype
+external/harfbuzz
