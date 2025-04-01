@@ -12,7 +12,7 @@ DIRFT = external/freetype
 DIRSVG = external/plutosvg
 DIRVG = external/plutovg
 
-INCLUDE =  -I./$(DIRVG)/include -I./$(DIRSVG)/source -I./$(DIRFT)/build/amiga/include -I./$(DIRFT)/include -I/gg/usr/local/include -I./include
+INCLUDE =  -I./$(DIRVG)/include -I./$(DIRSVG)/source -I./$(DIRFT)/build/amiga/include -I./$(DIRFT)/include -I./include -I/gg/usr/local/include 
 SDL3_LIBS =  -noixemul -L/gg/usr/local/lib -lSDL3 -lGL -lc -lm -lpthread 
 CFLAGS  =  -noixemul -O3 $(INCLUDE) -Wall -Wno-pointer-sign -fno-strict-aliasing $(CDEFS)
 
