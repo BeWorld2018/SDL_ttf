@@ -1,11 +1,12 @@
 # Makefile to build the SDL2_ttf library
+# you need to have SDL2 SDK /gg
 #
 CDEFS   = -DAROS_ALMOST_COMPATIBLE -DUSE_INLINE_STDARG -D__MORPHOS_SHAREDLIBS -D_NO_PPCINLINE \
 				   -DUSE_FREETYPE_ERRORS -DTTF_USE_HARFBUZZ=1 
 
-CC      = ppc-morphos-gcc-11 -noixemul
+CC      = ppc-morphos-gcc-9 -noixemul
 
-INCLUDE = -I/usr/local/include/SDL2 -I. -I/usr/local/include
+INCLUDE = -I/gg/usr/local/include/SDL2 -I. -I/gg/usr/local/include
 CFLAGS  = -mcpu=750 -mtune=7450 -O3 $(INCLUDE) -mresident32 -Wall -Wno-pointer-sign -fno-strict-aliasing $(CDEFS)
 
 AR	= ppc-morphos-ar
@@ -38,17 +39,17 @@ sdklibs:
 	@cd morphos/devenv; if ! $(MAKE) all; then exit 1; fi;
 
 sdk: sdklibs
-	mkdir -p /usr/local/include/SDL2
-	mkdir -p /usr/local/lib
-	mkdir -p /usr/local/lib/libb32
-	cp SDL_ttf.h /usr/local/include/SDL2
-	cp morphos/devenv/lib/libSDL2_ttf.a  /usr/local/lib/libSDL2_ttf.a
-	cp morphos/devenv/lib/libb32/libSDL2_ttf.a  /usr/local/lib/libb32/libSDL2_ttf.a
+	mkdir -p /gg/usr/local/include/SDL2
+	mkdir -p /gg/usr/local/lib
+	mkdir -p /gg/usr/local/lib/libb32
+	cp SDL_ttf.h /gg/usr/local/include/SDL2
+	cp morphos/devenv/lib/libSDL2_ttf.a  /gg/usr/local/lib/libSDL2_ttf.a
+	cp morphos/devenv/lib/libb32/libSDL2_ttf.a  /gg/usr/local/lib/libb32/libSDL2_ttf.a
 
 headers:
 	$(HEADERING)
-	@cvinclude.pl --fd=morphos/sdk/fd/sdl2_ttf_lib.fd --clib=morphos/sdk/clib/sdl2_ttf_protos.h --proto=morphos/sdk/proto/sdl2_ttf.h
-	@cvinclude.pl --fd=morphos/sdk/fd/sdl2_ttf_lib.fd --clib=morphos/sdk/clib/sdl2_ttf_protos.h --inline=morphos/sdk/ppcinline/sdl2_ttf.h
+	/gg/bin/cvinclude.pl --fd=morphos/sdk/fd/sdl2_ttf_lib.fd --clib=morphos/sdk/clib/sdl2_ttf_protos.h --proto=morphos/sdk/proto/sdl2_ttf.h
+	/gg/bin/cvinclude.pl --fd=morphos/sdk/fd/sdl2_ttf_lib.fd --clib=morphos/sdk/clib/sdl2_ttf_protos.h --inline=morphos/sdk/ppcinline/sdl2_ttf.h
 
 install: $(LIBRARY)
 	@cp $(LIBRARY) LIBS:
@@ -64,15 +65,15 @@ $(TARGET): $(OBJECTS)  $(FTOBJECTS)
 
 $(LIBRARY): $(TARGET) $(COREOBJECTS)
 	$(LINKING)
-	$(CC) -nostartfiles -mresident32 -Wl,-Map=sdl2_ttf.map $(COREOBJECTS) -o $@.db -L. -lSDL2_ttf -L/usr/local/lib -lSDL2 -lGL -lfreetype -lm
+	$(CC) -nostartfiles -mresident32 -Wl,-Map=sdl2_ttf.map $(COREOBJECTS) -o $@.db -L. -lSDL2_ttf -L/gg/usr/local/lib -lSDL2 -lGL -lfreetype -lm
 	$(STRIPPING)
 	@ppc-morphos-strip -o $@ --remove-section=.comment $@.db
 
 glfont: sdklibs glfont.c
-	$(CC) -O2 -Wall glfont.c -o $@ $(INCLUDE) -DUSE_INLINE_STDARG -DHAVE_OPENGL -Lmorphos/devenv/lib -lSDL2_ttf -L/usr/local/lib -lSDL2 -lGL
+	$(CC) -O2 -Wall glfont.c -o $@ $(INCLUDE) -DUSE_INLINE_STDARG -DHAVE_OPENGL -Lmorphos/devenv/lib -lSDL2_ttf -L/gg/usr/local/lib -lSDL2 -lGL
 
 showfont: sdklibs showfont.c
-	$(CC) -O2 -Wall showfont.c -o $@ $(INCLUDE) -DUSE_INLINE_STDARG -Lmorphos/devenv/lib -lSDL2_ttf -L/usr/local/lib -lSDL2 -lGL
+	$(CC) -O2 -Wall showfont.c -o $@ $(INCLUDE) -DUSE_INLINE_STDARG -Lmorphos/devenv/lib -lSDL2_ttf -L/gg/usr/local/lib -lSDL2 -lGL
 
 clean:
 	rm -f $(LIBRARY) $(TARGET) $(OBJECTS) $(FTOBJECTS) $(COREOBJECTS) *.db *.s
