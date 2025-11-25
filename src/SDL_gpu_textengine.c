@@ -872,11 +872,9 @@ static void DestroyEngineData(TTF_GPUTextEngineData *data)
     SDL_free(data);
 }
 
-static void SDLCALL NukeFontData(void *unused, const void *key, const void *value)
+static void SDLCALL NukeFontData(void *userdata, const void *key, const void *value)
 {
     TTF_GPUTextEngineFontData *data = (TTF_GPUTextEngineFontData *)value;
-    (void)key;
-    (void)unused;
     DestroyFontData(data);
 }
 
@@ -938,7 +936,6 @@ static void SDLCALL DestroyText(void *userdata, TTF_Text *text)
 {
     TTF_GPUTextEngineTextData *data = (TTF_GPUTextEngineTextData *)text->internal->engine_text;
 
-    (void)userdata;
     DestroyTextData(data);
 }
 
@@ -960,14 +957,14 @@ TTF_TextEngine *TTF_CreateGPUTextEngine(SDL_GPUDevice *device)
         SDL_SetError("Failed to create GPU text engine.");
         return NULL;
     }
-    SDL_SetPointerProperty(props, TTF_PROP_GPU_TEXT_ENGINE_DEVICE, device);
+    SDL_SetPointerProperty(props, TTF_PROP_GPU_TEXT_ENGINE_DEVICE_POINTER, device);
 
     return TTF_CreateGPUTextEngineWithProperties(props);
 }
 
 TTF_TextEngine *TTF_CreateGPUTextEngineWithProperties(SDL_PropertiesID props)
 {
-    SDL_GPUDevice *device = SDL_GetPointerProperty(props, TTF_PROP_GPU_TEXT_ENGINE_DEVICE, NULL);
+    SDL_GPUDevice *device = SDL_GetPointerProperty(props, TTF_PROP_GPU_TEXT_ENGINE_DEVICE_POINTER, NULL);
     if (!device) {
         SDL_SetError("Failed to create GPU text engine: Invalid device.");
         return NULL;
@@ -978,9 +975,10 @@ TTF_TextEngine *TTF_CreateGPUTextEngineWithProperties(SDL_PropertiesID props)
         return NULL;
     }
 
-    int atlas_texture_size = (int)SDL_GetNumberProperty(props, TTF_PROP_GPU_TEXT_ENGINE_ATLAS_TEXTURE_SIZE, 1024);
+    int atlas_texture_size = (int)SDL_GetNumberProperty(props, TTF_PROP_GPU_TEXT_ENGINE_ATLAS_TEXTURE_SIZE_NUMBER, 1024);
     if (atlas_texture_size <= 0) {
         SDL_SetError("Failed to create GPU text engine: Invalid texture atlas size.");
+        SDL_free(engine);
         return NULL;
     }
 
