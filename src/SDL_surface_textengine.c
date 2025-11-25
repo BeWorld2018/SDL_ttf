@@ -209,11 +209,9 @@ static void DestroyEngineData(TTF_SurfaceTextEngineData *data)
     SDL_free(data);
 }
 
-static void SDLCALL NukeFontData(void *unused, const void *key, const void *value)
+static void SDLCALL NukeFontData(void *userdata, const void *key, const void *value)
 {
     TTF_SurfaceTextEngineFontData *data = (TTF_SurfaceTextEngineFontData *)value;
-    (void)key;
-    (void)unused;
     DestroyFontData(data);
 }
 
@@ -264,7 +262,6 @@ static void SDLCALL DestroyText(void *userdata, TTF_Text *text)
 {
     TTF_SurfaceTextEngineTextData *data = (TTF_SurfaceTextEngineTextData *)text->internal->engine_text;
 
-    (void)userdata;
     DestroyTextData(data);
 }
 
@@ -332,7 +329,7 @@ static void DrawCopy(TTF_SurfaceTextEngineTextData *data, const TTF_CopyOperatio
 
 bool TTF_DrawSurfaceText(TTF_Text *text, int x, int y, SDL_Surface *surface)
 {
-    if (!text || !text->internal || text->internal->engine->CreateText != CreateText) {
+    if (!text || !text->internal || !text->internal->engine || text->internal->engine->CreateText != CreateText) {
         return SDL_InvalidParamError("text");
     }
     if (!surface) {
