@@ -1,6 +1,6 @@
 /*
   SDL_ttf:  A companion library to SDL for working with TrueType (tm) fonts
-  Copyright (C) 2001-2025 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 2001-2026 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -1464,8 +1464,8 @@ static bool Render_Line_TextEngine(TTF_Font *font, TTF_Direction direction, int 
 
         if (!glyph_font->render_sdf) {
             // Make sure glyph is inside text area
-            above_w = x + glyph_width - width;
-            above_h = y + glyph_rows  - height;
+            above_w = x + glyph_width - (xstart + width);
+            above_h = y + glyph_rows  - (ystart + height);
 
             if (x < 0) {
                 int tmp = -x;
@@ -2332,6 +2332,8 @@ bool TTF_AddFallbackFont(TTF_Font *font, TTF_Font *fallback)
     return true;
 }
 
+static void Flush_Cache(TTF_Font *font);
+
 void TTF_RemoveFallbackFont(TTF_Font *font, TTF_Font *fallback)
 {
     if (!font || !fallback) {
@@ -2364,6 +2366,7 @@ void TTF_RemoveFallbackFont(TTF_Font *font, TTF_Font *fallback)
         }
     }
 
+    Flush_Cache(font);
     UpdateFontText(font, NULL);
 }
 
@@ -5065,7 +5068,7 @@ bool TTF_DeleteTextString(TTF_Text *text, int offset, int length)
         text->text[offset] = '\0';
     } else {
         int shift = (old_length - length - offset);
-        SDL_memcpy(&text->text[offset], &text->text[offset + length], shift);
+        SDL_memmove(&text->text[offset], &text->text[offset + length], shift);
         text->text[offset + shift] = '\0';
     }
 
