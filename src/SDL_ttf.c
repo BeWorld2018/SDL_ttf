@@ -46,7 +46,7 @@ struct Library *HarfbuzzBase = NULL;
 #  define TTF_USE_SDF 0
 #endif
 
-#if TTF_USE_SDF
+#if TTF_USE_SDF || TTF_USE_PLUTOSVG
 #include FT_MODULE_H
 #endif
 #define DEFAULT_SDF_SPREAD 8
@@ -1509,8 +1509,6 @@ static bool Render_Line_TextEngine(TTF_Font *font, TTF_Direction direction, int 
             if (glyph_font->render_sdf) {
                 op->copy.dst.x -= DEFAULT_SDF_SPREAD;
                 op->copy.dst.y -= DEFAULT_SDF_SPREAD;
-                op->copy.dst.w -= DEFAULT_SDF_SPREAD;
-                op->copy.dst.h -= DEFAULT_SDF_SPREAD;
             }
         } else {
             // Use the distance to the next glyph as our bounds width
@@ -4524,7 +4522,7 @@ static bool LayoutText(TTF_Text *text)
     Uint32 script = TTF_GetTextScript(text);
 
     if (!GetWrappedLines(font, text->text, length, direction, script, text->internal->x, wrap_width, trim_whitespace, &strLines, &numLines, &width, &height, false)) {
-        return true;
+        return false;
     }
     height += text->internal->y;
 
