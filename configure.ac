@@ -248,14 +248,8 @@ if test x$enable_harfbuzz = xyes; then
 			TTF_LIBS="$TTF_LIBS -lusp10 -lgdi32 -lrpcrt4"
 			PC_LIBS="$PC_LIBS -lusp10 -lgdi32 -lrpcrt4"
 		  ;;
-		  *-*-darwin*)
+		  *-*-darwin*|*-ios-*)
 			# for coretext support:
-			TTF_LIBS="$TTF_LIBS -framework ApplicationServices"
-			PC_LIBS="$PC_LIBS -framework ApplicationServices"
-		  ;;
-		  *-ios-*)
-			# for coretext support:
-			# On iOS CoreText and CoreGraphics are stand-alone frameworks
 			TTF_LIBS="$TTF_LIBS -framework CoreText -framework CoreGraphics -framework CoreFoundation"
 			PC_LIBS="$PC_LIBS -framework CoreText -framework CoreGraphics -framework CoreFoundation"
 		  ;;
