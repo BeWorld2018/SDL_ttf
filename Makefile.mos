@@ -1,122 +1,199 @@
-# Makefile to build the libSDL3_ttf.a
+# Makefile to build sdl3_ttf.library for MorphOS (SDL_ttf 3.3)
 #
-CDEFS   = -DUSE_FREETYPE_ERRORS  -DFT2_BUILD_LIBRARY -DNDEBUG -D__MORPHOS_SHAREDLIBS -DTTF_USE_HARFBUZZ=1 \
-		  -DTTF_USE_PLUTOSVG=1 -DPLUTOSVG_BUILD_STATIC -DPLUTOVG_BUILD_STATIC
+#   make -f Makefile.mos                  library + glue libs + LVO check
+#   make -f Makefile.mos glue             regenerate fd/clib/TTF_stubs.h + proto/ppcinline
+#                                         (after an SDL_ttf update; needs python3)
+#   make -f Makefile.mos checklvo         every jump table entry vs the fd (run by "all")
+#   make -f Makefile.mos tests            showfont, glfont, testapp... against the library
+#   make -f Makefile.mos sdk              install headers, fd/proto and glue libs in $(PREFIX)
+#                                         (libSDL3_ttf.a there is the glue, not a static lib)
+#   make -f Makefile.mos install          copy sdl3_ttf.library to LIBS: (on MorphOS)
+#
+# FreeType and HarfBuzz are the MorphOS system libraries, opened per opener
+# by sdl3_ttf.library (MorphOS/TTF_startup.c):
+#   freetype.library V59   FT_* calls through /gg/lib/libfreetypeb32.a
+#   harfbuzz.library V67   hb_* calls through the libb32 libaboxstubs.a glue
+# harfbuzz.library's hb_ft_font_create() gets our FT_Face: both must use
+# the same FreeType, so no static FreeType here.
+#
+# PlutoSVG/PlutoVG (SVG color emoji, external/) are linked in statically.
+#
+# Glue libraries (MorphOS/devenv/lib):
+#   libSDL3_ttf.a              programs: opens sdl3_ttf.library
+#   libb32/libSDL3_ttf.a       -mresident32 code
+#   libb32/libSDL3_ttf-nc.a    -mresident32, opens nothing (SDL3TTFBase set by hand)
 
-# Features:   
-# include Freetype, Plutosvg, Plutovg into static lib
+PREFIX  = /gg/usr/local
+CC      = ppc-morphos-gcc-9
+AR      = ppc-morphos-ar
+NM      = ppc-morphos-nm
+STRIP   = ppc-morphos-strip
+OBJDUMP = ppc-morphos-objdump
+CVI     = /gg/bin/cvinclude.pl
+PYTHON  = python3
 
-CC      = ppc-morphos-gcc-11
-
-DIRFT = external/freetype
 DIRSVG = external/plutosvg
-DIRVG = external/plutovg
+DIRVG  = external/plutovg
 
-INCLUDE =  -I./$(DIRVG)/include -I./$(DIRSVG)/source -I./$(DIRFT)/build/amiga/include -I./$(DIRFT)/include -I./include -I/gg/usr/local/include 
-SDL3_LIBS =  -noixemul -L/gg/usr/local/lib -lSDL3 -lGL -lc -lm -lpthread 
-CFLAGS  =  -noixemul -O3 $(INCLUDE) -Wall -Wno-pointer-sign -fno-strict-aliasing $(CDEFS)
+GLUEDEFS   = -DAROS_ALMOST_COMPATIBLE -DUSE_INLINE_STDARG
+COMMONDEFS = $(GLUEDEFS) -D_NO_PPCINLINE -D__MORPHOS_SHAREDLIBS -DBUILD_SDL3_TTF_LIBRARY
+FEATDEFS   = -DUSE_FREETYPE_ERRORS -DTTF_USE_HARFBUZZ=1 \
+             -DTTF_USE_PLUTOSVG=1 -DPLUTOSVG_BUILD_STATIC -DPLUTOVG_BUILD_STATIC -DPLUTOSVG_HAS_FREETYPE
 
-AR	= ppc-morphos-ar
+# Library version = SDL_ttf version (MorphOS/TTF_version.h)
+TTFVERSION_H = include/SDL3_ttf/SDL_ttf.h
+TTFVERSION   = $(shell awk '$$2 == "SDL_TTF_MAJOR_VERSION" { ma = $$3 } $$2 == "SDL_TTF_MINOR_VERSION" { mi = $$3 } $$2 == "SDL_TTF_MICRO_VERSION" { mc = $$3 } END { printf "-DTTF_LIB_MAJOR=%d -DTTF_LIB_MINOR=%d -DTTF_LIB_MICRO=%d -DTTF_LIB_REVISION=%d", ma, mi, mc, mi * 100 + mc }' $(TTFVERSION_H))
 
-ECHE = echo -e
-BOLD = \033[1m
-NRML = \033[22m
+CDEFS = $(COMMONDEFS) $(FEATDEFS) $(TTFVERSION)
 
-COMPILING = @$(ECHE) "compiling $(BOLD)$@$(NRML)..."
-ARCHIVING = @$(ECHE) "archiving $(BOLD)$@$(NRML)..."
+# FreeType headers: /gg/include (freetype.library SDK)
+INCLUDE = -I./include -I$(DIRVG)/include -I$(DIRSVG)/source -I$(PREFIX)/include
+CFLAGS  = -noixemul -mcpu=750 -mtune=7450 -O3 -mresident32 \
+          -Wall -Wno-pointer-sign -fno-strict-aliasing -fomit-frame-pointer \
+          $(INCLUDE) $(CDEFS)
+DEPFLAGS = -MMD -MP
 
-TARGET  = libSDL3_ttf.a
+# libb32/libSDL3-nc.a: SDL calls through SDL3Base (opened per opener in
+# MorphOS/TTF_startup.c) and the varargs wrappers (SDL_SetError...).
+LIBS = -L$(PREFIX)/lib -lSDL3-nc -lGL -lfreetypeb32 -lm
 
-SRC_SDLTTF = src/SDL_hashtable.c \
-			src/SDL_hashtable_ttf.c \
-			src/SDL_gpu_textengine.c \
-			src/SDL_renderer_textengine.c \
-			src/SDL_surface_textengine.c \
-			src/SDL_ttf.c
+AMIGADATE = $(shell date +"%-d.%-m.%Y")
 
-SRC_FT = 	$(DIRFT)/src/base/ftinit.c \
-			$(DIRFT)/src/base/ftbase.c \
-			$(DIRFT)/src/base/ftbbox.c \
-			$(DIRFT)/src/base/ftbdf.c \
-			$(DIRFT)/src/base/ftbitmap.c \
-			$(DIRFT)/src/base/ftcid.c \
-			$(DIRFT)/src/base/ftfstype.c \
-			$(DIRFT)/src/base/ftgasp.c \
-			$(DIRFT)/src/base/ftglyph.c \
-			$(DIRFT)/src/base/ftgxval.c \
-			$(DIRFT)/src/base/ftmm.c \
-			$(DIRFT)/src/base/ftotval.c \
-			$(DIRFT)/src/base/ftpatent.c \
-			$(DIRFT)/src/base/ftpfr.c \
-			$(DIRFT)/src/base/ftstroke.c \
-			$(DIRFT)/src/base/ftsynth.c \
-			$(DIRFT)/src/base/fttype1.c \
-			$(DIRFT)/src/base/ftwinfnt.c \
-			$(DIRFT)/src/autofit/autofit.c \
-			$(DIRFT)/src/gxvalid/gxvalid.c \
-			$(DIRFT)/src/otvalid/otvalid.c \
-			$(DIRFT)/src/psaux/psaux.c \
-			$(DIRFT)/src/psnames/psnames.c \
-			$(DIRFT)/src/pshinter/pshinter.c \
-			$(DIRFT)/src/raster/raster.c \
-			$(DIRFT)/src/smooth/smooth.c \
-			$(DIRFT)/src/sfnt/sfnt.c \
-			$(DIRFT)/src/cache/ftcache.c \
-			$(DIRFT)/src/cff/cff.c \
-			$(DIRFT)/src/type1/type1.c \
-			$(DIRFT)/src/type42/type42.c \
-			$(DIRFT)/src/cid/type1cid.c \
-			$(DIRFT)/src/truetype/truetype.c \
-			$(DIRFT)/src/bdf/bdf.c \
-			$(DIRFT)/src/pcf/pcf.c \
-			$(DIRFT)/src/pfr/pfr.c \
-			$(DIRFT)/src/winfonts/winfnt.c \
-			$(DIRFT)/src/sdf/sdf.c \
-			$(DIRFT)/src/svg/svg.c \
-			$(DIRFT)/src/gzip/ftgzip.c \
-			$(DIRFT)/src/bzip2/ftbzip2.c \
-			$(DIRFT)/src/lzw/ftlzw.c \
-			$(DIRFT)/builds/amiga/src/base/ftsystem.c \
-			$(DIRFT)/builds/amiga/src/base/ftdebug.c
- 
-SRC_SVG =	$(DIRSVG)/source/plutosvg.c
+COMPILING = @echo "compiling $@..."
+LINKING   = @echo "linking $@..."
+ARCHIVING = @echo "archiving $@..."
 
-SRC_VG =    $(DIRVG)/source/plutovg-blend.c \
-			$(DIRVG)/source/plutovg-canvas.c \
-			$(DIRVG)/source/plutovg-font.c \
-			$(DIRVG)/source/plutovg-matrix.c \
-			$(DIRVG)/source/plutovg-paint.c \
-			$(DIRVG)/source/plutovg-path.c \
-			$(DIRVG)/source/plutovg-rasterize.c \
-			$(DIRVG)/source/plutovg-surface.c \
-			$(DIRVG)/source/plutovg-ft-math.c \
-			$(DIRVG)/source/plutovg-ft-raster.c \
-			$(DIRVG)/source/plutovg-ft-stroker.c
- 
-SOURCES = $(SRC_SDLTTF) $(SRC_FT) $(SRC_SVG) $(SRC_VG)
+INTERNAL = libSDL3_ttf_lib.a
+LIBRARY  = sdl3_ttf.library
 
-OBJECTS = $(shell echo $(SOURCES) | sed -e 's,\.c,\.o,g')
+SOURCES = \
+	src/SDL_gl_textengine.c        \
+	src/SDL_gpu_textengine.c       \
+	src/SDL_hashtable.c            \
+	src/SDL_hashtable_ttf.c        \
+	src/SDL_renderer_textengine.c  \
+	src/SDL_surface_textengine.c   \
+	src/SDL_ttf.c                  \
+	$(DIRSVG)/source/plutosvg.c    \
+	$(DIRVG)/source/plutovg-blend.c \
+	$(DIRVG)/source/plutovg-canvas.c \
+	$(DIRVG)/source/plutovg-font.c \
+	$(DIRVG)/source/plutovg-matrix.c \
+	$(DIRVG)/source/plutovg-paint.c \
+	$(DIRVG)/source/plutovg-path.c \
+	$(DIRVG)/source/plutovg-rasterize.c \
+	$(DIRVG)/source/plutovg-surface.c \
+	$(DIRVG)/source/plutovg-ft-math.c \
+	$(DIRVG)/source/plutovg-ft-raster.c \
+	$(DIRVG)/source/plutovg-ft-stroker.c
 
-all: $(TARGET) glfont showfont
+OBJECTS     = $(SOURCES:.c=.o)
+COREOBJECTS = MorphOS/TTF_library.o MorphOS/TTF_startup.o MorphOS/TTF_stubs.o
+DEPS        = $(OBJECTS:.o=.d) $(COREOBJECTS:.o=.d)
 
-install: all
-	cp -r include/SDL3_ttf /gg/usr/local/include/
-	cp libSDL3_ttf.a /gg/usr/local/lib/libSDL3_ttf.a
+.PHONY: all sdklibs glue headers checklvo tests sdk install clean dump
 
-$(TARGET): $(OBJECTS)
+all: $(LIBRARY) sdklibs checklvo
+	@echo All done
+
+%.o: %.c
+	$(COMPILING)
+	@$(CC) $(CFLAGS) $(DEPFLAGS) -o $@ -c $<
+
+# The bundled stb_image/stb_truetype define many unused static functions.
+# No thread-local stbi_failure_reason: emutls would pull the libgcc thread
+# support (atexit/exit) into the library. NDEBUG: assert() would print
+# through the libnix stdio, never initialised in the library.
+$(DIRVG)/source/%.o: CFLAGS += -Wno-unused-function -DSTBI_NO_THREAD_LOCALS -DNDEBUG
+$(DIRSVG)/source/%.o: CFLAGS += -DNDEBUG
+
+# The library glue isn't resident code: it runs before r13 is set up.
+# No -D_NO_PPCINLINE here: exec calls must stay inline, the libabox stubs
+# linked with -mresident32 load SysBase through r13.
+MorphOS/TTF_library.o: MorphOS/TTF_library.c
+	$(COMPILING)
+	@$(CC) -noixemul -mcpu=750 -Wall -fno-strict-aliasing $(INCLUDE) $(GLUEDEFS) $(TTFVERSION) \
+		-D__AMIGADATE__=\"$(AMIGADATE)\" $(DEPFLAGS) -o $@ -c $<
+
+$(INTERNAL): $(OBJECTS)
 	$(ARCHIVING)
-	@$(AR) crvs $@ $^
+	@rm -f $@
+	@$(AR) crs $@ $^
 
-glfont: examples/glfont.c
-	$(COMPILING)
-	$(CC) -O3 -noixemul -Wall examples/glfont.c -o $@ $(INCLUDE) -DHAVE_OPENGL -L. -lSDL3_ttf $(SDL3_LIBS)
+$(LIBRARY): $(INTERNAL) $(COREOBJECTS)
+	$(LINKING)
+	@$(CC) -noixemul -nostartfiles -mresident32 -Wl,-Map=sdl3_ttf.map \
+		$(COREOBJECTS) -o $@.db -L. -lSDL3_ttf_lib $(LIBS)
+	@$(STRIP) -o $@ --remove-section=.comment $@.db
 
-showfont: examples/showfont.c
-	$(COMPILING)
-	$(CC) -O3 -noixemul -Wall examples/showfont.c examples/editbox.c -o $@ $(INCLUDE) -L. -lSDL3_ttf $(SDL3_LIBS)
+sdklibs:
+	@$(MAKE) --no-print-directory -C MorphOS/devenv all
+
+# Functions the objects define: the others become ##private (LIB_Unsupported)
+glue: $(INTERNAL)
+	$(NM) -g --defined-only $(INTERNAL) | awk 'NF == 3 && ($$2 == "T" || $$2 == "W") { print $$3 }' | sort -u > ttf_defined.txt
+	$(PYTHON) build-scripts/gen_morphos_lib.py --defined ttf_defined.txt
+	@rm -f ttf_defined.txt MorphOS/TTF_library.o MorphOS/TTF_stubs.o
+	@$(MAKE) --no-print-directory -f Makefile.mos headers
+
+headers:
+	@echo Creating proto/ppcinline headers
+	@mkdir -p MorphOS/sdk/proto MorphOS/sdk/ppcinline
+	@$(CVI) --fd=MorphOS/sdk/fd/sdl3_ttf_lib.fd --clib=MorphOS/sdk/clib/sdl3_ttf_protos.h --proto=MorphOS/sdk/proto/sdl3_ttf.h
+	@$(CVI) --fd=MorphOS/sdk/fd/sdl3_ttf_lib.fd --clib=MorphOS/sdk/clib/sdl3_ttf_protos.h --inline=MorphOS/sdk/ppcinline/sdl3_ttf.h
+	@$(PYTHON) build-scripts/gen_morphos_lib.py --fix-inline MorphOS/sdk/ppcinline/sdl3_ttf.h
+
+checklvo: $(LIBRARY)
+	@$(PYTHON) build-scripts/check_morphos_lvo.py $(LIBRARY).db
+
+sdk: all
+	mkdir -p $(PREFIX)/include/SDL3_ttf $(PREFIX)/lib/libb32
+	mkdir -p $(addprefix $(PREFIX)/include/,fd clib proto ppcinline)
+	cp -f include/SDL3_ttf/SDL_ttf.h include/SDL3_ttf/SDL_textengine.h $(PREFIX)/include/SDL3_ttf/
+	cp -f MorphOS/sdk/fd/sdl3_ttf_lib.fd $(PREFIX)/include/fd/
+	cp -f MorphOS/sdk/clib/sdl3_ttf_protos.h $(PREFIX)/include/clib/
+	cp -f MorphOS/sdk/proto/sdl3_ttf.h $(PREFIX)/include/proto/
+	cp -f MorphOS/sdk/ppcinline/sdl3_ttf.h $(PREFIX)/include/ppcinline/
+	cp -f MorphOS/devenv/lib/libSDL3_ttf.a $(PREFIX)/lib/libSDL3_ttf.a
+	cp -f MorphOS/devenv/lib/libb32/libSDL3_ttf.a $(PREFIX)/lib/libb32/libSDL3_ttf.a
+	cp -f MorphOS/devenv/lib/libb32/libSDL3_ttf-nc.a $(PREFIX)/lib/libb32/libSDL3_ttf-nc.a
+
+# No dependency: run on MorphOS after building on the cross-compiler, it
+# must not try to rebuild (timestamps, .d paths, python3 for checklvo)
+install:
+	@test -f $(LIBRARY) || { echo "$(LIBRARY) not built: make -f Makefile.mos first"; exit 1; }
+	cp $(LIBRARY) LIBS:
+	-flushlib $(LIBRARY)
+
+# Test programs, linked against the glue libraries (sdl3.library SDK installed)
+APPS     = showfont glfont testapp testgltext testgputext
+APPFLAGS = -noixemul -O2 -Wall $(INCLUDE)
+APPLIBS  = -LMorphOS/devenv/lib -lSDL3_ttf -L$(PREFIX)/lib -lSDL3 -lGL
+
+tests: $(APPS)
+
+showfont: examples/showfont.c examples/editbox.c sdklibs
+	$(LINKING)
+	@$(CC) $(APPFLAGS) examples/showfont.c examples/editbox.c -o $@ $(APPLIBS)
+	@$(STRIP) --strip-unneeded $@
+
+glfont: examples/glfont.c sdklibs
+	$(LINKING)
+	@$(CC) $(APPFLAGS) -DHAVE_OPENGL $< -o $@ $(APPLIBS)
+	@$(STRIP) --strip-unneeded $@
+
+testapp testgltext testgputext: %: examples/%.c sdklibs
+	$(LINKING)
+	@$(CC) $(APPFLAGS) $< -o $@ $(APPLIBS)
+	@$(STRIP) --strip-unneeded $@
 
 clean:
-	rm -f $(TARGET) $(OBJECTS) *.db *.s glfont showfont
+	rm -f $(LIBRARY) $(LIBRARY).db $(LIBRARY).s sdl3_ttf.map $(INTERNAL)
+	rm -f $(OBJECTS) $(COREOBJECTS) $(DEPS)
+	rm -f $(APPS)
+	@$(MAKE) --no-print-directory -C MorphOS/devenv clean
 
 dump:
-	ppc-morphos-objdump --disassemble-all --reloc $(showfont) >$(showfont).s
+	$(OBJDUMP) --disassemble-all --reloc $(LIBRARY).db >$(LIBRARY).s
+
+-include $(DEPS)

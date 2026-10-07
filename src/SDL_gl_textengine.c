@@ -382,8 +382,13 @@ static bool UpdateGLTexture(TTF_GLTextEngineData *enginedata, unsigned int textu
             Uint32 *dst_pixels = (Uint32 *)dst_row;
             for (int x = 0; x < rect->w; ++x) {
                 Uint32 p = src_pixels[x];
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+                /* native 0xAARRGGBB -> R,G,B,A bytes */
+                dst_pixels[x] = (p << 8) | (p >> 24);
+#else
                 /* BGRA byte order -> RGBA byte order: swap B and R */
                 dst_pixels[x] = (p & 0xFF00FF00u) | ((p >> 16) & 0xFFu) | ((p & 0xFFu) << 16);
+#endif
             }
             src += pitch;
             dst_row += row_size;
@@ -946,6 +951,11 @@ static bool ProbeGLCapabilities(TTF_GLTextEngineData *data)
     } else {
         /* Desktop GL 1.2+ always has BGRA and UNPACK_ROW_LENGTH */
         data->has_bgra = true;
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+        /* GL_BGRA/GL_UNSIGNED_BYTE wants B,G,R,A bytes, the surfaces hold
+           native ARGB8888 words: use the RGBA conversion */
+        data->has_bgra = false;
+#endif
         data->has_unpack_row_length = true;
     }
 
@@ -1048,6 +1058,14 @@ TTF_TextEngine *TTF_CreateGLTextEngine(void)
 
 TTF_TextEngine *TTF_CreateGLTextEngineWithProperties(SDL_PropertiesID props)
 {
+#ifdef BUILD_SDL3_TTF_LIBRARY
+    // SDL_GL_GetProcAddress() comes from the -lSDL3 glue: it resolves through
+    // the library's own TinyGLBase/__tglContext, never set up (not the
+    // application's), and would crash. Fail cleanly instead.
+    (void)props;
+    SDL_SetError("TTF_CreateGLTextEngine() isn't available in sdl3_ttf.library");
+    return NULL;
+#endif
     TTF_TextEngine *engine = (TTF_TextEngine *)SDL_malloc(sizeof(*engine));
     if (!engine) {
         return NULL;

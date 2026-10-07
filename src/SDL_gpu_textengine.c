@@ -342,7 +342,29 @@ static bool UpdateGPUTexture(SDL_GPUDevice *device, SDL_GPUTexture *texture,
     }
 
     Uint8 *output = SDL_MapGPUTransferBuffer(device, tbuf, false);
+#ifdef __MORPHOS__
+    if (!output) {
+        SDL_ReleaseGPUTransferBuffer(device, tbuf);
+        return false;
+    }
+#endif
 
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+    // B8G8R8A8_UNORM wants B,G,R,A bytes, the surfaces hold native ARGB8888 words
+    {
+        const Uint8 *input = pixels;
+
+        for (int i = 0; i < rect->h; ++i) {
+            const Uint32 *src = (const Uint32 *)input;
+            Uint32 *dst = (Uint32 *)output;
+            for (int x = 0; x < rect->w; ++x) {
+                dst[x] = SDL_Swap32(src[x]);
+            }
+            output += row_size;
+            input += pitch;
+        }
+    }
+#else
     if ((size_t)pitch == row_size) {
         SDL_memcpy(output, pixels, data_size);
     } else {
@@ -356,6 +378,7 @@ static bool UpdateGPUTexture(SDL_GPUDevice *device, SDL_GPUTexture *texture,
             input += pitch;
         }
     }
+#endif
 
     SDL_UnmapGPUTransferBuffer(device, tbuf);
 

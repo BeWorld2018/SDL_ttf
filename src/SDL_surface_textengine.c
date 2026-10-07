@@ -96,6 +96,9 @@ static TTF_SurfaceTextEngineGlyphData *GetGlyphData(TTF_SurfaceTextEngineFontDat
 
         data = CreateGlyphData(surface, image_type);
         if (!data) {
+#ifdef __MORPHOS__
+            SDL_DestroySurface(surface);
+#endif
             return NULL;
         }
 

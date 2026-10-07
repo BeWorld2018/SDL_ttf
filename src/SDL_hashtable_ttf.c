@@ -58,9 +58,22 @@ SDL_HashTable *SDL_CreateGlyphHashTable(SDL_GlyphHashTable_NukeFn nukefn)
 bool SDL_InsertIntoGlyphHashTable(SDL_HashTable *table, TTF_Font *font, Uint32 glyph_index, const void *value)
 {
     GlyphHashtableKey *key = (GlyphHashtableKey *)SDL_calloc(1, sizeof(*key));
+#ifdef __MORPHOS__
+    if (!key) {
+        return false;
+    }
+#endif
     key->font = font;
     key->glyph_index = glyph_index;
+#ifdef __MORPHOS__
+    if (!SDL_InsertIntoHashTable(table, key, value, true)) {
+        SDL_free(key);  // not taken by the table on failure
+        return false;
+    }
+    return true;
+#else
     return SDL_InsertIntoHashTable(table, key, value, true);
+#endif
 }
 
 bool SDL_FindInGlyphHashTable(SDL_HashTable *table, TTF_Font *font, Uint32 glyph_index, const void **value)

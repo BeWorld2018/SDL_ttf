@@ -34,7 +34,7 @@
 #include FT_TRUETYPE_TABLES_H
 #include FT_IMAGE_H
 
-#ifdef __MORPHOS__
+#if defined(__MORPHOS__) && !defined(BUILD_SDL3_TTF_LIBRARY)
 #include <proto/exec.h>
 struct Library *HarfbuzzBase = NULL;
 #endif
@@ -280,6 +280,12 @@ struct TTF_Font {
     // The name of the font
     char *name;
 
+#ifdef BUILD_SDL3_TTF_LIBRARY
+    // Open fonts of this opener, closed by TTF_MOS_CloseAllFonts()
+    TTF_Font *mos_prev;
+    TTF_Font *mos_next;
+#endif
+
     // Freetype2 maintains all sorts of useful info itself
     FT_Face face;
     long face_index;
@@ -382,6 +388,21 @@ static struct
     SDL_Mutex *lock;
     FT_Library library;
 } TTF_state;
+
+#ifdef BUILD_SDL3_TTF_LIBRARY
+/* The library data is per opener: so is this list */
+static TTF_Font *mos_fonts = NULL;
+
+/* Called when the opener closes sdl3_ttf.library: the fonts the
+   application did not close would otherwise leak, along with their
+   harfbuzz.library hb_font_t. */
+void TTF_MOS_CloseAllFonts(void)
+{
+    while (mos_fonts) {
+        TTF_CloseFont(mos_fonts);
+    }
+}
+#endif
 
 #define TTF_CHECK_INITIALIZED(errval)                   \
     if (SDL_ShouldInit(&TTF_state.init)) {              \
@@ -1829,7 +1850,7 @@ bool TTF_Init(void)
 {
     bool result = true;
 
-#ifdef __MORPHOS__
+#if defined(__MORPHOS__) && !defined(BUILD_SDL3_TTF_LIBRARY)
 	if ((HarfbuzzBase = OpenLibrary("harfbuzz.library", 0 )) == NULL)
 	{
 			TTF_SetFTError("Couldn't open harfbuzz.library !", 0);
@@ -2038,6 +2059,14 @@ TTF_Font *TTF_OpenFontWithProperties(SDL_PropertiesID props)
         return NULL;
     }
 
+#ifdef BUILD_SDL3_TTF_LIBRARY
+    font->mos_next = mos_fonts;
+    if (mos_fonts) {
+        mos_fonts->mos_prev = font;
+    }
+    mos_fonts = font;
+
+#endif
     font->src = src;
     font->src_offset = src_offset;
     font->closeio = closeio;
@@ -2269,6 +2298,34 @@ static bool SDLCALL UpdateFontTextCallback(void *userdata, const SDL_HashTable *
     return true;
 }
 
+#ifdef __MORPHOS__
+// A fallback loop that doesn't go through the initial font (A->B, B->C, C->B)
+// would recurse forever: bound the depth.
+#define TTF_MOS_MAX_FALLBACK_DEPTH 16
+
+static void UpdateFontTextDepth(TTF_Font *font, TTF_Font *initial_font, int depth)
+{
+    if (!initial_font) {
+        initial_font = font;
+    } else if ((font == initial_font) || (depth > TTF_MOS_MAX_FALLBACK_DEPTH)) {
+        // font fallback loop
+        return;
+    }
+
+    if (font->text) {
+        SDL_IterateHashTable(font->text, UpdateFontTextCallback, NULL);
+    }
+
+    for (TTF_FontList *list = font->fallback_for; list; list = list->next) {
+        UpdateFontTextDepth(list->font, initial_font, depth + 1);
+    }
+}
+
+static void UpdateFontText(TTF_Font *font, TTF_Font *initial_font)
+{
+    UpdateFontTextDepth(font, initial_font, 0);
+}
+#else
 static void UpdateFontText(TTF_Font *font, TTF_Font *initial_font)
 {
     if (!initial_font) {
@@ -2286,6 +2343,7 @@ static void UpdateFontText(TTF_Font *font, TTF_Font *initial_font)
         UpdateFontText(list->font, initial_font);
     }
 }
+#endif
 
 SDL_PropertiesID TTF_GetFontProperties(TTF_Font *font)
 {
@@ -2734,6 +2792,16 @@ static bool Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int translatio
 
             /* Glyph buffer is NOT aligned,
              * Extra width so it can read an 'aligned' size expanding on the left */
+#ifdef __MORPHOS__
+            {
+                // pitch * rows from a (colour) glyph's size: could wrap
+                size_t bufsize;
+                if ((dst->pitch <= 0) || !SDL_size_mul_check_overflow((size_t)dst->pitch, (size_t)dst->rows, &bufsize) ||
+                    !SDL_size_add_check_overflow(bufsize, (size_t)alignment, &bufsize) || (bufsize > (size_t)SDL_MAX_SINT32)) {
+                    return SDL_SetError("Glyph too large");
+                }
+            }
+#endif
             dst->buffer = (unsigned char *)SDL_malloc(alignment + dst->pitch * dst->rows);
             if (!dst->buffer) {
                 return false;
@@ -2914,7 +2982,18 @@ static bool Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int translatio
                     NORMAL_GRAY4(remainder);
                 } else if (src->pixel_mode == FT_PIXEL_MODE_BGRA) {
                     if (want & CACHED_COLOR) {
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+                        // BG_Blended_Color() reads native ARGB8888 pixels
+                        while (quotient--) {
+                            Uint32 pixel = ((Uint32)srcp[3] << 24) | ((Uint32)srcp[2] << 16) |
+                                           ((Uint32)srcp[1] << 8) | srcp[0];
+                            SDL_memcpy(dstp, &pixel, sizeof(pixel));
+                            srcp += 4;
+                            dstp += 4;
+                        }
+#else
                         SDL_memcpy(dstp, srcp, 4 * src->width);
+#endif
                     } else {
                         // Convert to grayscale
                         while (quotient--) {
@@ -2941,10 +3020,17 @@ static bool Load_Glyph(TTF_Font *font, c_glyph *cached, int want, int translatio
                         r = *srcp++;
                         g = *srcp++;
                         b = *srcp++;
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+                        // BG_Blended_LCD() reads native 0x00RRGGBB pixels
+                        Uint32 pixel = ((Uint32)alpha << 24) | ((Uint32)r << 16) | ((Uint32)g << 8) | b;
+                        SDL_memcpy(dstp, &pixel, sizeof(pixel));
+                        dstp += 4;
+#else
                         *dstp++ = b;
                         *dstp++ = g;
                         *dstp++ = r;
                         *dstp++ = alpha;
+#endif
                     }
 
                 } else {
@@ -3126,6 +3212,37 @@ static FT_UInt get_char_index(TTF_Font *font, Uint32 ch)
     return idx;
 }
 
+#ifdef __MORPHOS__
+static FT_UInt get_char_index_fallback_depth(TTF_Font *font, Uint32 ch, TTF_Font *initial_font, TTF_Font **glyph_font, int depth)
+{
+    if (!initial_font) {
+        initial_font = font;
+    } else if ((font == initial_font) || (depth > TTF_MOS_MAX_FALLBACK_DEPTH)) {
+        // font fallback loop
+        return 0;
+    }
+
+    FT_UInt idx = get_char_index(font, ch);
+    if (idx > 0) {
+        if (glyph_font) {
+            *glyph_font = font;
+        }
+    } else {
+        for (TTF_FontList *list = font->fallbacks; list; list = list->next) {
+            idx = get_char_index_fallback_depth(list->font, ch, initial_font, glyph_font, depth + 1);
+            if (idx > 0) {
+                break;
+            }
+        }
+    }
+    return idx;
+}
+
+static FT_UInt get_char_index_fallback(TTF_Font *font, Uint32 ch, TTF_Font *initial_font, TTF_Font **glyph_font)
+{
+    return get_char_index_fallback_depth(font, ch, initial_font, glyph_font, 0);
+}
+#else
 static FT_UInt get_char_index_fallback(TTF_Font *font, Uint32 ch, TTF_Font *initial_font, TTF_Font **glyph_font)
 {
     if (!initial_font) {
@@ -3150,6 +3267,7 @@ static FT_UInt get_char_index_fallback(TTF_Font *font, Uint32 ch, TTF_Font *init
     }
     return idx;
 }
+#endif
 
 
 
@@ -3388,6 +3506,10 @@ static bool CollectGlyphsFromFont(TTF_Font *font, const char *text, size_t lengt
         pos->y_offset = hb_glyph_position[i].y_offset;
         pos->offset = (int)hb_glyph_info[i].cluster;
         if (!Find_GlyphByIndex(font, pos->index, 0, 0, 0, 0, 0, 0, &pos->glyph, NULL)) {
+#ifdef __MORPHOS__
+            hb_buffer_destroy(hb_buffer);  // harfbuzz.library memory
+            positions->len = i;  // the next ones have no glyph
+#endif
             return SDL_SetError("Couldn't find glyph %u in font", pos->index);
         }
     }
@@ -5016,10 +5138,25 @@ bool TTF_InsertTextString(TTF_Text *text, int offset, const char *string, size_t
         return TTF_SetTextString(text, string, length);
     }
 
+#ifdef __MORPHOS__
+    // part of the text itself: the realloc and memmove below would pull it away
+    char *string_copy = NULL;
+    if ((string >= text->text) && (string <= (text->text + SDL_strlen(text->text)))) {
+        string_copy = (char *)SDL_malloc(length);
+        if (!string_copy) {
+            return false;
+        }
+        SDL_memcpy(string_copy, string, length);
+        string = string_copy;
+    }
+#endif
     int old_length = (int)SDL_strlen(text->text);
     size_t new_length = old_length + length;
     char *new_string = (char *)SDL_realloc(text->text, new_length + 1);
     if (!new_string) {
+#ifdef __MORPHOS__
+        SDL_free(string_copy);
+#endif
         return false;
     }
 
@@ -5040,6 +5177,9 @@ bool TTF_InsertTextString(TTF_Text *text, int offset, const char *string, size_t
     }
     SDL_memcpy(new_string + offset, string, length);
     new_string[new_length] = '\0';
+#ifdef __MORPHOS__
+    SDL_free(string_copy);
+#endif
 
     text->text = new_string;
 
@@ -6133,6 +6273,17 @@ void TTF_CloseFont(TTF_Font *font)
         return;
     }
 
+#ifdef BUILD_SDL3_TTF_LIBRARY
+    if (font->mos_prev) {
+        font->mos_prev->mos_next = font->mos_next;
+    } else {
+        mos_fonts = font->mos_next;
+    }
+    if (font->mos_next) {
+        font->mos_next->mos_prev = font->mos_prev;
+    }
+#endif
+
     if (font->text) {
         while (!SDL_HashTableEmpty(font->text)) {
             SDL_IterateHashTable(font->text, RemoveOneTextCallback, font);
@@ -6183,6 +6334,13 @@ void TTF_Quit(void)
         return;
     }
 
+#ifdef BUILD_SDL3_TTF_LIBRARY
+    // FT_Done_FreeType() frees every FT_Face: close the fonts the application
+    // left while they're still valid (TTF_MOS_CloseAllFonts() at opener close
+    // would otherwise free them a second time)
+    TTF_MOS_CloseAllFonts();
+#endif
+
     if (TTF_state.library) {
         FT_Done_FreeType(TTF_state.library);
         TTF_state.library = NULL;
@@ -6193,7 +6351,7 @@ void TTF_Quit(void)
         TTF_state.lock = NULL;
     }
 
-#ifdef __MORPHOS__
+#if defined(__MORPHOS__) && !defined(BUILD_SDL3_TTF_LIBRARY)
 	if (HarfbuzzBase) {
 		CloseLibrary(HarfbuzzBase);
 		HarfbuzzBase = NULL;
